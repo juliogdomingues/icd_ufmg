@@ -1,236 +1,415 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-import matplotlib.pyplot as plt
+import numpy as np
 import seaborn as sns
-from random import randint
-from sklearn.linear_model import RidgeCV
-from sklearn.metrics import classification_report, confusion_matrix, f1_score, precision_score
-from sklearn.model_selection import train_test_split, StratifiedKFold
+import matplotlib.pyplot as plt
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LinearRegression
+from sklearn.metrics import classification_report
+from sklearn.model_selection import train_test_split
 import statsmodels.api as sm
 
-def carregar_dados():
-    data = pd.read_csv("https://raw.githubusercontent.com/souza-marcos/ICD_Projeto/main/data/global-data-on-sustainable-energy.csv")
-    share_electricity_renewables = pd.read_csv('https://raw.githubusercontent.com/souza-marcos/ICD_Projeto/main/data/renewable_energy/04%20share-electricity-renewables.csv')
-    countries_by_continents = pd.read_csv("https://raw.githubusercontent.com/souza-marcos/ICD_Projeto/main/data/Countries%20by%20continents.csv")
-    hydro_energy_participation_per_country = pd.read_csv('https://raw.githubusercontent.com/souza-marcos/ICD_Projeto/main/data/renewable_energy/07%20share-electricity-hydro.csv')
-    wind_energy_participation_per_country = pd.read_csv('https://raw.githubusercontent.com/souza-marcos/ICD_Projeto/main/data/renewable_energy/11%20share-electricity-wind.csv')
-    solar_energy_participation_per_country = pd.read_csv('https://raw.githubusercontent.com/souza-marcos/ICD_Projeto/main/data/renewable_energy/15%20share-electricity-solar.csv')
-    biofuel_production_per_country = pd.read_csv('https://raw.githubusercontent.com/souza-marcos/ICD_Projeto/main/data/renewable_energy/16%20biofuel-production.csv')
-    return data, share_electricity_renewables, countries_by_continents, hydro_energy_participation_per_country, wind_energy_participation_per_country, solar_energy_participation_per_country, biofuel_production_per_country
+# Função para carregar os dados (com cache para melhor performance)
 
-def prepare_data(share_electricity_renewables, countries_by_continents):
-    share_electricity_renewables = share_electricity_renewables.drop(columns=['Code'])
-    share_electricity_renewables = share_electricity_renewables.rename(columns={'Entity': 'Country'})
-    share_electricity_renewables = share_electricity_renewables.merge(countries_by_continents)
-    share_electricity_renewables = share_electricity_renewables[share_electricity_renewables['Renewables (% electricity)'] != 0]
-    share_electricity_renewables = share_electricity_renewables.query('Year >= 2000 and Year <= 2021')
-    average_share_electricity_renewables_per_continent = (share_electricity_renewables.groupby(['Continent', 'Year'])
-                                                          ['Renewables (% electricity)'].mean().round(2).reset_index())
-    return average_share_electricity_renewables_per_continent, share_electricity_renewables
 
-def plot_global_renewables(average_share_electricity_renewables_per_continent):
-    st.header("Evolução da Participação de Fontes Renováveis na Matriz Energética por Continente")
+@st.cache_data
+def load_data():
+    data = pd.read_csv(
+        "https://raw.githubusercontent.com/souza-marcos/ICD_Projeto/main/data/global-data-on-sustainable-energy.csv")
+    share_electricity_renewables = pd.read_csv(
+        'https://raw.githubusercontent.com/souza-marcos/ICD_Projeto/main/data/renewable_energy/04%20share-electricity-renewables.csv')
+    countries_by_continents = pd.read_csv(
+        "https://raw.githubusercontent.com/souza-marcos/ICD_Projeto/main/data/Countries%20by%20continents.csv")
+    hydro_energy_participation_per_country = pd.read_csv(
+        'https://raw.githubusercontent.com/souza-marcos/ICD_Projeto/main/data/renewable_energy/07%20share-electricity-hydro.csv')
+    wind_energy_participation_per_country = pd.read_csv(
+        'https://raw.githubusercontent.com/souza-marcos/ICD_Projeto/main/data/renewable_energy/11%20share-electricity-wind.csv')
+    solar_energy_participation_per_country = pd.read_csv(
+        'https://raw.githubusercontent.com/souza-marcos/ICD_Projeto/main/data/renewable_energy/15%20share-electricity-solar.csv')
+    return {
+        "data": data,
+        "share_electricity_renewables": share_electricity_renewables,
+        "countries_by_continents": countries_by_continents,
+        "hydro_energy_participation_per_country": hydro_energy_participation_per_country,
+        "wind_energy_participation_per_country": wind_energy_participation_per_country,
+        "solar_energy_participation_per_country": solar_energy_participation_per_country
+    }
+
+
+data = load_data()
+
+# Função para plotar mapas cloropléticos animados
+
+
+def plot_animated_choropleth_map(df, countries_names_column, color_column, user_title, user_subtitle):
+    min_value_color_column = df[color_column].min()
+    max_value_color_column = df[color_column].max()
+
+    df_plot = px.choropleth(df,
+                            locations=countries_names_column,
+                            locationmode="country names",
+                            color=color_column,
+                            animation_frame="Year",
+                            color_continuous_scale="YlGnBu",
+                            range_color=(min_value_color_column, max_value_color_column))
+
+    df_plot.update_geos(projection_type="natural earth")
+
+    df_plot.update_layout(title=user_title, title_x=0.5, font_size=15,
+                          coloraxis_colorbar={"title": f'{user_subtitle}'}, height=700)
+
+    st.plotly_chart(df_plot)
+
+# Função para plotar gráfico de linhas
+
+
+def plot_line_chart_energy_source_use(df, x_axis, y_axis, user_title, x_axis_user_title, y_axis_user_title):
+    df_plot = px.line(df, x=x_axis, y=y_axis,
+                      color_discrete_sequence=['mediumseagreen'])
+
+    df_plot.update_layout(title=user_title,
+                          title_x=0.5,
+                          font_size=15,
+                          xaxis_title=x_axis_user_title,
+                          yaxis_title=y_axis_user_title)
+
+    st.plotly_chart(df_plot)
+
+# Seção 1: Análise Global
+
+
+def analyze_global_data():
+    st.title("Análise mundial da energia sustentável")
+
+    # Subseção 1.1: Evolução das fontes limpas na matriz global
+    st.header("Evolução das fontes limpas na matriz global")
+
+    share_electricity_renewables = data['share_electricity_renewables']
+    countries_by_continents = data['countries_by_continents']
+
+    share_electricity_renewables = share_electricity_renewables.drop(columns=[
+                                                                     'Code'])
+    share_electricity_renewables = share_electricity_renewables.rename(columns={
+                                                                       'Entity': 'Country'})
+    share_electricity_renewables = share_electricity_renewables.merge(
+        countries_by_continents)
+    share_electricity_renewables = share_electricity_renewables[
+        share_electricity_renewables['Renewables (% electricity)'] != 0]
+    share_electricity_renewables = share_electricity_renewables.query(
+        'Year >= 2000 and Year <= 2021')
+
+    # Gráfico de linhas: Evolução por continente
+    average_share_electricity_renewables_per_continent = (share_electricity_renewables
+                                                          .groupby(['Continent', 'Year'])
+                                                          ['Renewables (% electricity)']
+                                                          .mean()
+                                                          .round(2)
+                                                          .reset_index())
     fig = px.line(average_share_electricity_renewables_per_continent, x='Year', y='Renewables (% electricity)',
-                  color='Continent',
-                  color_discrete_sequence=px.colors.qualitative.T10,
-                  labels={"Continent": "Continente"}, width=700, height=700)
-    fig.update_layout(
-        title_text='<b>Evolução da participação de fontes renováveis<br>na matriz energética de cada continente (2000 - 2021)<b>',
-        title_x=0.5, font_size=12, xaxis_title='Ano', yaxis_title='Porcentagem (%)')
+                  color='Continent', color_discrete_sequence=px.colors.qualitative.T10,
+                  title='Evolução da participação de fontes renováveis na matriz energética de cada continente (2000 - 2021)')
+    fig.update_layout(xaxis_title='Ano', yaxis_title='Porcentagem (%)')
     st.plotly_chart(fig)
 
-def plot_world_renewables(share_electricity_renewables):
-    st.header("Evolução da Participação de Fontes Renováveis na Matriz Energética Mundial")
-    average_share_electricity_renewables_per_year = (share_electricity_renewables.groupby('Year')
-                                                     ['Renewables (% electricity)'].mean().round(2).reset_index())
-    fig = px.line(average_share_electricity_renewables_per_year, x='Year', y='Renewables (% electricity)', width=700, height=700)
-    fig.update_layout(
-        title_text='<b>Evolução da participação de fontes renováveis<br>na matriz energética mundial (2000 - 2021)<b>',
-        title_x=0.5, font_size=12, xaxis_title='Ano', yaxis_title='Porcentagem (%)')
+    # Gráfico de linhas: Média global
+    average_share_electricity_renewables_per_year = (share_electricity_renewables
+                                                     .groupby('Year')
+                                                     ['Renewables (% electricity)']
+                                                     .mean()
+                                                     .round(2)
+                                                     .reset_index())
+    fig = px.line(average_share_electricity_renewables_per_year, x='Year', y='Renewables (% electricity)',
+                  title='Evolução da participação de fontes renováveis na matriz energética mundial (2000 - 2021)')
+    fig.update_layout(xaxis_title='Ano', yaxis_title='Porcentagem (%)')
     fig.update_traces(line_color='mediumseagreen')
     st.plotly_chart(fig)
 
-def plot_continent_renewables(data, countries_by_continents):
-    st.header("Consumo de Energia Provinda de Fontes Renováveis por Continente")
-    global_data = data.rename(columns={'Entity': 'Country'})
-    global_data = pd.merge(global_data, countries_by_continents)
-    global_data['Financial flows to developing countries (US $)'] = global_data['Financial flows to developing countries (US $)'].div(1e9)
-    renewable_energy_in_final_consumption = global_data[['Country', 'Year', 'Renewable energy share in the total final energy consumption (%)', 'Continent']]
-    renewable_energy_in_final_consumption = renewable_energy_in_final_consumption.dropna()
-    renewable_energy_in_final_consumption_per_continent = (renewable_energy_in_final_consumption.groupby('Continent')
-                                                           ['Renewable energy share in the total final energy consumption (%)']
-                                                           .agg(['mean', 'median']).round(2).sort_values(by='mean', ascending=True).reset_index())
-    fig = px.bar(renewable_energy_in_final_consumption_per_continent, orientation='h', x='mean', y='Continent', color='Continent', color_discrete_sequence=px.colors.qualitative.Prism, width=1500, height=700)
-    fig.update_layout(title_text='<b>Consumo de energia provindo de fontes renováveis<b>', title_x=0.5, font_size=15, showlegend=False)
-    fig.update_layout(xaxis_title='Percentual do total consumido (%)', yaxis_title='Continente')
-    st.plotly_chart(fig)
+    # Subseção 1.2: Produção bruta de energia por país
+    st.header("Produção bruta de energia por país")
 
-def plot_specific_choropleth_map(df, countries_names_column, color_column, user_title, user_subtitle):
-    min_value_color_column = df[color_column].min()
-    max_value_color_column = df[color_column].max()
-    fig = px.choropleth(df, locations=countries_names_column, locationmode="country names", color=color_column, animation_frame="Year",
-                        color_continuous_scale="YlGnBu", range_color=(min_value_color_column, max_value_color_column))
-    fig.update_geos(projection_type="natural earth")
-    fig.update_layout(title=user_title, title_x=0.5, font_size=15, coloraxis_colorbar={"title": f'{user_subtitle}'}, height=700)
-    return fig
+    df_renewable = pd.read_csv(
+        "https://raw.githubusercontent.com/souza-marcos/ICD_Projeto/main/data/renewable_energy/03%20modern-renewable-prod.csv")
+    df_renewable = df_renewable.dropna(subset=['Code'])
+    df_renewable = df_renewable[df_renewable['Entity'] != 'World']
+    df_renewable = df_renewable.query("Year >= 2000 and Year <= 2020")
 
-def plot_specific_line_chart(df, x_axis, y_axis, user_title, x_axis_user_title, y_axis_user_title):
-    fig = px.line(df, x=x_axis, y=y_axis, color_discrete_sequence=['mediumseagreen'])
-    fig.update_layout(title=user_title, title_x=0.5, font_size=15, xaxis_title=x_axis_user_title, yaxis_title=y_axis_user_title)
-    return fig
+    temp = df_renewable.groupby('Entity').sum()
 
-def plot_map_hydro_energy(hydro_energy_participation_per_country):
-    st.header("Mapa Global da Produção de Energia Hidrelétrica")
-    global_hydro_energy_participation = hydro_energy_participation_per_country.query('Entity == "World" and Year >= 2000 and Year <= 2021')[['Year', 'Hydro (% electricity)']]
-    hydro_energy_participation_per_country = hydro_energy_participation_per_country.dropna().round(2)
-    hydro_energy_participation_per_country.sort_values(by='Year', ascending=True, inplace=True)
-    hydro_energy_participation_per_country = hydro_energy_participation_per_country.query('Year >= 2000 and Year <= 2021')
-    fig = plot_specific_choropleth_map(hydro_energy_participation_per_country, 'Entity', 'Hydro (% electricity)', '<b>Taxa de participação de fontes de energia hidrelétricas na matriz de cada país (2000-2021)<b>', 'Porcentagem (%)')
-    st.plotly_chart(fig)
+    top_wind = (temp
+                .nlargest(10, 'Electricity from wind (TWh)')
+                .reset_index()['Entity'])
 
-def plot_line_hydro_energy(global_hydro_energy_participation):
-    st.header("Taxa Média Global de Participação de Fontes de Energia Hidrelétricas nas Matrizes dos Países (2000-2021)")
-    fig = plot_specific_line_chart(global_hydro_energy_participation, 'Year', 'Hydro (% electricity)', '<b>Taxa média global de participação de fontes de energia hidrelétricas nas matrizes dos países (2000-2021)<b>', 'Ano', 'Porcentagem (%)')
-    st.plotly_chart(fig)
+    top_hydro = (temp
+                 .nlargest(10, 'Electricity from hydro (TWh)')
+                 .reset_index()['Entity'])
 
-def plot_map_solar_energy(solar_energy_participation_per_country):
-    st.header("Mapa Global da Produção de Energia Solar")
-    global_solar_energy_participation = solar_energy_participation_per_country.query('Entity == "World" and Year >= 2000 and Year <= 2021')[['Year', 'Solar (% electricity)']]
-    solar_energy_participation_per_country = solar_energy_participation_per_country.dropna().round(2)
-    solar_energy_participation_per_country.sort_values(by='Year', ascending=True, inplace=True)
-    solar_energy_participation_per_country = solar_energy_participation_per_country.query('Year >= 2000 and Year <= 2021')
-    fig = plot_specific_choropleth_map(solar_energy_participation_per_country, 'Entity', 'Solar (% electricity)', '<b>Taxa de participação de energia solar na matriz de cada país (2000-2021)<b>', 'Porcentagem (%)')
-    st.plotly_chart(fig)
+    top_solar = (temp
+                 .nlargest(10, 'Electricity from solar (TWh)')
+                 .reset_index()['Entity'])
 
-def plot_line_solar_energy(global_solar_energy_participation):
-    st.header("Taxa Média Global de Participação de Fontes de Energia Solar nas Matrizes dos Países (2000-2021)")
-    fig = plot_specific_line_chart(global_solar_energy_participation, 'Year', 'Solar (% electricity)', '<b>Taxa média global de participação de fontes de energia solares nas matrizes dos países (2000-2021)<b>', 'Ano', 'Porcentagem (%)')
-    st.plotly_chart(fig)
+    fig, ax = plt.subplots(3, 1, figsize=(10, 10))
 
-def plot_map_wind_energy(wind_energy_participation_per_country):
-    st.header("Mapa Global da Produção de Energia Eólica")
-    global_wind_energy_participation = wind_energy_participation_per_country.query('Entity == "World" and Year >= 2000 and Year <= 2021')[['Year', 'Wind (% electricity)']]
-    wind_energy_participation_per_country = wind_energy_participation_per_country.dropna().round(2)
-    wind_energy_participation_per_country.sort_values(by='Year', ascending=True, inplace=True)
-    wind_energy_participation_per_country = wind_energy_participation_per_country.query('Year >= 2000 and Year <= 2021')
-    fig = plot_specific_choropleth_map(wind_energy_participation_per_country, 'Entity', 'Wind (% electricity)', '<b>Taxa de participação de energia eólica na matriz energética de cada país (2000-2021)<b>', 'Porcentagem (%)')
-    st.plotly_chart(fig)
+    sns.lineplot(x='Year', y='Electricity from wind (TWh)', hue='Entity',
+                 data=df_renewable[df_renewable['Entity'].isin(top_wind)], ax=ax[0])
+    ax[0].legend(loc='upper left')
+    ax[0].set_title('Produção de energia eólica (Top 10 países)')
 
-def plot_line_wind_energy(global_wind_energy_participation):
-    st.header("Taxa Média Global de Participação de Fontes de Energia Eólica nas Matrizes dos Países (2000-2021)")
-    fig = plot_specific_line_chart(global_wind_energy_participation, 'Year', 'Wind (% electricity)', '<b>Taxa média global de participação de fontes de energia eólicas nas matrizes dos países (2000-2021)<b>', 'Ano', 'Porcentagem (%)')
-    st.plotly_chart(fig)
+    sns.lineplot(x='Year', y='Electricity from hydro (TWh)', hue='Entity',
+                 data=df_renewable[df_renewable['Entity'].isin(top_hydro)], ax=ax[1])
+    ax[1].legend(loc='upper left')
+    ax[1].set_title('Produção de energia hidrelétrica (Top 10 países)')
 
-def plot_energy_consumption(df, countries_by_continents):
-    st.header("Uso de Energias Renováveis e Fósseis")
-    df1 = df[['Entity', 'Year', 'Electricity from fossil fuels (TWh)', 'Electricity from renewables (TWh)']].groupby('Entity').sum()
-    top_renew = df1.nlargest(10, 'Electricity from renewables (TWh)').reset_index()['Entity']
-    df_comp = (df[df['Entity'].isin(top_renew)].rename(columns={'Electricity from renewables (TWh)': 'Renovável', 'Electricity from fossil fuels (TWh)': 'Fóssil'})[["Entity", "Year", "Renovável", "Fóssil"]])
-    
-    fig, ax = plt.subplots(1, 2, figsize=(15, 5), sharey=True)
-    sns.lineplot(x='Year', y='Renovável', data=df_comp, hue='Entity', ax=ax[0])
-    ax[0].set_title('Renováveis')
-    
-    sns.lineplot(x='Year', y='Fóssil', data=df_comp, hue='Entity', ax=ax[1])
-    ax[1].set_title('Fósseis')
-  
+    sns.lineplot(x='Year', y='Electricity from solar (TWh)', hue='Entity',
+                 data=df_renewable[df_renewable['Entity'].isin(top_solar)], ax=ax[2])
+    ax[2].legend(loc='upper left')
+    ax[2].set_title('Produção de energia solar (Top 10 países)')
+
     plt.tight_layout()
-    st.pyplot(plt)
-
-def plot_scatter_fossil_renewable(df):
-    st.header("Energia Fóssil x Renovável")
-    df_comp = df.rename(columns={'Electricity from renewables (TWh)': 'Renovável', 'Electricity from fossil fuels (TWh)': 'Fóssil'}) [["Entity", "Year", "Renovável", "Fóssil"]]
-    
-    # Define df1 dentro da função
-    df1 = df[['Entity', 'Year', 'Electricity from fossil fuels (TWh)', 'Electricity from renewables (TWh)']].groupby('Entity').sum()
-    
-    fig, ax = plt.subplots(1, 2, figsize=(15, 5))
-    sns.scatterplot(data=df_comp, x='Fóssil', y='Renovável', hue='Year', ax=ax[0])
-    ax[0].set_title('Fóssil x Renováveis')
-    ax[0].set_xlabel('Energia Fóssil (TWh)')
-    ax[0].set_ylabel('Energia Renovável (TWh)')
-
-    top_renew = df1.nlargest(10, 'Electricity from renewables (TWh)').reset_index()['Entity']
-    sns.scatterplot(data=df_comp[df_comp['Entity'].isin(top_renew)], x='Fóssil', y='Renovável', hue='Entity', ax=ax[1])
-
     st.pyplot(fig)
 
-def plot_gdp_vs_renewable(df):
-    st.header("PIB per capita x Uso de Energia Renovável")
-    media_paises = (df[['Entity','Year','Renewable energy share in the total final energy consumption (%)','gdp_per_capita']]
-                   .dropna().groupby('Entity').mean().reset_index())
-    fig = px.scatter(data_frame=media_paises, x='gdp_per_capita', y='Renewable energy share in the total final energy consumption (%)',
-                     title='PIB per capita X Uso de energia renovável',
-                     labels={'gdp_per_capita': 'PIB Per Capita (U$)','Renewable energy share in the total final energy consumption (%)':'Uso de energia renovável (%)'},
-                     width=1080, hover_name='Entity')
+    # Subseção 1.3: Padrões entre fontes fósseis e limpas
+    st.header("Comparação entre fontes fósseis e limpas")
+
+    df1 = pd.read_csv(
+        "https://raw.githubusercontent.com/souza-marcos/ICD_Projeto/main/data/global-data-on-sustainable-energy.csv")
+
+    temp = df1[['Entity', 'Year', 'Electricity from fossil fuels (TWh)', 'Electricity from renewables (TWh)']].groupby(
+        'Entity').sum()
+    top_renew = (temp
+                 .nlargest(10, 'Electricity from renewables (TWh)')
+                 .reset_index()['Entity'])
+
+    df_comp = (df1[df1['Entity'].isin(top_renew)]
+               .rename(columns={'Electricity from renewables (TWh)': 'Renovável', 'Electricity from fossil fuels (TWh)': 'Fóssil'})
+               [["Entity", "Year", "Renovável", "Fóssil"]])
+
+    fig, ax = plt.subplots(1, 2, figsize=(15, 5), sharey=True)
+
+    sns.lineplot(x='Year', y='Renovável', data=df_comp, hue='Entity', ax=ax[0])
+    ax[0].set_ylim(0, 5300)
+    ax[0].set_title('Renováveis (Top 10 países)')
+
+    sns.lineplot(x='Year', y='Fóssil', data=df_comp, hue='Entity', ax=ax[1])
+    ax[1].set_ylim(0, 5300)
+    ax[1].set_title('Fósseis (Top 10 países)')
+
+    plt.tight_layout()
+    st.pyplot(fig)
+
+# Seção 2: Consumo por Localidade
+
+
+def consumption_by_location():
+    st.title("Consumo de energia por localização")
+
+    # Subseção 2.1: Consumo de energia renovável por continente
+    st.header("Consumo de energia renovável por continente")
+    global_data = data['data']
+    countries_by_continents = data['countries_by_continents']
+
+    global_data.rename(columns={'Entity': 'Country'}, inplace=True)
+    global_data = pd.merge(global_data, countries_by_continents)
+    global_data['Financial flows to developing countries (US $)'] = global_data['Financial flows to developing countries (US $)'].div(
+        1e9)
+
+    renewable_energy_in_final_consumption = global_data[[
+        'Country', 'Year', 'Renewable energy share in the total final energy consumption (%)', 'Continent']]
+    renewable_energy_in_final_consumption = renewable_energy_in_final_consumption.dropna()
+
+    renewable_energy_in_final_consumption_per_continent = (renewable_energy_in_final_consumption
+                                                           .groupby('Continent')
+                                                           ['Renewable energy share in the total final energy consumption (%)']
+                                                           .agg(['mean', 'median'])
+                                                           .round(2)
+                                                           .sort_values(by='mean', ascending=True)
+                                                           .reset_index())
+
+    fig = px.bar(renewable_energy_in_final_consumption_per_continent, orientation='h', x='mean', y='Continent',
+                 color='Continent', color_discrete_sequence=px.colors.qualitative.Prism,
+                 title='Consumo de energia provindo de fontes renováveis')
+    fig.update_layout(xaxis_title='Percentual do total consumido (%)',
+                      yaxis_title='Continente', showlegend=False)
     st.plotly_chart(fig)
 
-def plot_gdp_vs_renewable_year(df, year):
-    st.header(f"PIB per capita x Uso de Energia Renovável em {year}")
-    paises_ano = df[['Entity','Year','Renewable energy share in the total final energy consumption (%)','gdp_per_capita']][df['Year']==year]
-    fig = px.scatter(data_frame=paises_ano, x='gdp_per_capita', y='Renewable energy share in the total final energy consumption (%)',
-                     title=f'PIB per capita X Uso de energia renovável ({year})',
-                     labels={'gdp_per_capita': 'PIB Per Capita (U$)','Renewable energy share in the total final energy consumption (%)':'Uso de energia renovável (%)'},
-                     width=1080, hover_name='Entity', color_discrete_sequence=['red'])
+    # Subseção 2.2: Taxa de uso de cada fonte não fóssil
+    st.header("Taxa de uso de cada fonte de energia não fóssil")
+
+    # Carregar os dados necessários
+    hydro_energy_participation_per_country = data['hydro_energy_participation_per_country']
+    wind_energy_participation_per_country = data['wind_energy_participation_per_country']
+    solar_energy_participation_per_country = data['solar_energy_participation_per_country']
+
+    # Mapa: Fontes hidrelétricas
+    hydro_energy_participation_per_country = hydro_energy_participation_per_country.dropna().round(2)
+    hydro_energy_participation_per_country.sort_values(
+        by='Year', ascending=True, inplace=True)
+    hydro_energy_participation_per_country = hydro_energy_participation_per_country.query(
+        'Year >= 2000 and Year <= 2021')
+    plot_animated_choropleth_map(hydro_energy_participation_per_country, 'Entity',
+                                 'Hydro (% electricity)',
+                                 'Taxa de participação de fontes de energia hidrelétricas na matriz de cada país (2000-2021)',
+                                 'Porcentagem (%)')
+
+    # Gráfico de linhas: Fontes hidrelétricas (Média Global)
+    global_hydro_energy_participation = hydro_energy_participation_per_country.query(
+        'Entity == "World" and Year >= 2000 and Year <= 2021')[['Year', 'Hydro (% electricity)']]
+    plot_line_chart_energy_source_use(global_hydro_energy_participation, 'Year', 'Hydro (% electricity)',
+                                      'Taxa média global de participação de fontes de energia hidrelétricas nas matrizes dos países (2000-2021)',
+                                      'Ano', 'Porcentagem (%)')
+
+    # Mapa: Fontes solares
+    solar_energy_participation_per_country = solar_energy_participation_per_country.dropna().round(2)
+    solar_energy_participation_per_country.sort_values(
+        by='Year', ascending=True, inplace=True)
+    solar_energy_participation_per_country = solar_energy_participation_per_country.query(
+        'Year >= 2000 and Year <= 2021')
+    plot_animated_choropleth_map(solar_energy_participation_per_country, 'Entity',
+                                 'Solar (% electricity)',
+                                 'Taxa de participação de energia solar na matriz  de cada país (2000-2021)',
+                                 'Porcentagem (%)')
+
+    # Gráfico de linhas: Fontes solares (Média Global)
+    global_solar_energy_participation = solar_energy_participation_per_country.query(
+        'Entity == "World" and Year >= 2000 and Year <= 2021')[['Year', 'Solar (% electricity)']]
+    plot_line_chart_energy_source_use(global_solar_energy_participation, 'Year', 'Solar (% electricity)',
+                                      'Taxa média global de participação de fontes de energia solares nas matrizes dos países (2000-2021)',
+                                      'Ano', 'Porcentagem (%)')
+
+    # Mapa: Fontes eólicas
+    wind_energy_participation_per_country = wind_energy_participation_per_country.dropna().round(2)
+    wind_energy_participation_per_country.sort_values(
+        by='Year', ascending=True, inplace=True)
+    wind_energy_participation_per_country = wind_energy_participation_per_country.query(
+        'Year >= 2000 and Year <= 2021')
+    plot_animated_choropleth_map(wind_energy_participation_per_country, 'Entity',
+                                 'Wind (% electricity)',
+                                 'Taxa de participação de energia eólica na matriz energética de cada país (2000-2021)',
+                                 'Porcentagem (%)')
+
+    # Gráfico de linhas: Fontes eólicas (Média Global)
+    global_wind_energy_participation = wind_energy_participation_per_country.query(
+        'Entity == "World" and Year >= 2000 and Year <= 2021')[['Year', 'Wind (% electricity)']]
+    plot_line_chart_energy_source_use(global_wind_energy_participation, 'Year', 'Wind (% electricity)',
+                                      'Taxa média global de participação de fontes de energia eólicas nas matrizes dos países (2000-2021)',
+                                      'Ano', 'Porcentagem (%)')
+
+
+# Seção 3: Relação entre Riqueza e Energias Renováveis
+def wealth_renewable_relationship():
+    st.title("Relação entre Riqueza e Energias Renováveis")
+
+    # Subseção 3.1: PIB per capita vs. Uso de energia renovável
+    st.header("PIB per capita vs. Uso de energia renovável")
+    df = data['data']
+    media_paises = (df[['Entity', 'Year', 'Renewable energy share in the total final energy consumption (%)', 'gdp_per_capita']].
+                    dropna().
+                    groupby('Entity').
+                    mean().
+                    reset_index()
+                    )
+    fig = px.scatter(
+        data_frame=media_paises,
+        x='gdp_per_capita',
+        y='Renewable energy share in the total final energy consumption (%)',
+        title='PIB per capita X Uso de energia renovável',
+        labels={'gdp_per_capita': 'PIB Per Capita (U$)',
+                'Renewable energy share in the total final energy consumption (%)': 'Uso de energia renovável (%)'},
+        hover_name='Entity'
+    )
     st.plotly_chart(fig)
 
-def plot_regression_consumo_gdp(dfBR):
-    st.header("Regressão: PIB per Capita vs Consumo de Energia Total per Capita")
-    X_total = dfBR['gdp_per_capita']
-    y_total = dfBR['Primary energy consumption per capita (kWh/person)']
-    X_total = sm.add_constant(X_total)
-    model_total = sm.OLS(y_total, X_total).fit()
+    st.markdown("No gráfico, cada ponto significa um país, considerando a média tanto do PIB Per Capita quanto do uso de energias renováveis. Podemos notar que o PIB Per Capita não parece estar diretamente relacionado com o uso dessas energias, como mostra a grande variação, principalmente, entre países mais pobres.")
 
-    plt.figure(figsize=(10, 6))
-    plt.plot(dfBR['gdp_per_capita'], y_total, 'o', label="Dados Observados")
-    plt.plot(dfBR['gdp_per_capita'], model_total.fittedvalues, 'r--', label="Ajuste do Modelo")
-    plt.xlabel('PIB per Capita')
-    plt.ylabel('Consumo de Energia Total per Capita (kWh/person)')
-    plt.legend(loc='best')
-    plt.title('Regressão Linear: PIB per Capita vs Consumo de Energia Total per Capita')
-    st.pyplot(plt)
+    # Subseção 3.2: PIB per capita vs. Capacidade de geração de energia limpa
+    st.header("PIB per capita vs. Capacidade de geração de energia limpa")
+    df_sorted = (df[['Entity', 'Renewable-electricity-generating-capacity-per-capita', 'Primary energy consumption per capita (kWh/person)', 'gdp_per_capita']].
+                 dropna().
+                 groupby('Entity').
+                 mean().
+                 reset_index().
+                 sort_values(by='gdp_per_capita', ascending=False).
+                 reset_index(drop=True)
+                 )
+    fig = px.scatter(
+        data_frame=df_sorted,
+        x='gdp_per_capita',
+        y='Renewable-electricity-generating-capacity-per-capita',
+        color_discrete_sequence=['blue'],
+        title='PIB per capita X Capacidade de geração de energia limpa por pessoa',
+        labels={'Renewable-electricity-generating-capacity-per-capita': 'Capacidade de geração de energia limpa per capita',
+                'gdp_per_capita': 'PIB per capita (U$)'},
+        hover_name='Entity'
+    )
+    st.plotly_chart(fig)
 
-def main():
-    st.title("Análise de Fontes de Energia Renováveis")
-    
-    data, ser, cc, hep, wep, sep, bpc = carregar_dados()
-    
-    average_share_electricity_renewables_per_continent, share_electricity_renewables = prepare_data(ser, cc)
-    
-    plot_global_renewables(average_share_electricity_renewables_per_continent)
-    
-    plot_world_renewables(share_electricity_renewables)
-    
-    plot_continent_renewables(data, cc)
-    
-    plot_map_hydro_energy(hep)
-    
-    plot_line_hydro_energy(hep.query('Entity == "World" and Year >= 2000 and Year <= 2021')[['Year', 'Hydro (% electricity)']])
-    
-    plot_map_solar_energy(sep)
-    
-    plot_line_solar_energy(sep.query('Entity == "World" and Year >= 2000 and Year <= 2021')[['Year', 'Solar (% electricity)']])
-    
-    plot_map_wind_energy(wep)
-    
-    plot_line_wind_energy(wep.query('Entity == "World" and Year >= 2000 and Year <= 2021')[['Year', 'Wind (% electricity)']])
-    
-    plot_energy_consumption(data, cc)
-    
-    plot_scatter_fossil_renewable(data)
-    
-    plot_gdp_vs_renewable(data)
+    st.markdown("Novamente, como pode-se observar, não parece haver uma relação muito clara entre PIB per capita e a capacidade dos países de gerar energia de fontes renováveis. A maioria dos países, considerando apenas o eixo Y, estão próximos uns dos outros.")
 
-    selected_year = st.slider("Selecione um ano para o gráfico de PIB vs. Renováveis:", min_value=2000, max_value=2021, value=2020)
-    plot_gdp_vs_renewable_year(data, selected_year)
-    
-    plot_regression_consumo_gdp(data[data['Entity'] == 'Brazil'])
+    # Subseção 3.3: Distribuição do uso de energia per capita
+    st.header("Distribuição do uso de energia per capita")
+    df_sorted = df_sorted.assign(Classificacao='Pobres')
+    df_sorted.loc[:int(len(df_sorted)/2), 'Classificacao'] = 'Ricos'
+    fig = px.box(
+        data_frame=df_sorted,
+        x='Classificacao',
+        y='Primary energy consumption per capita (kWh/person)',
+        color='Classificacao',
+        title='Distribuição do uso de energia per capita entre países ricos e pobres',
+        labels={'Primary energy consumption per capita (kWh/person)': 'Uso de energia (kWh/pessoa)',
+                'Classificacao': 'Classificação'}
+    )
+    st.plotly_chart(fig)
+    st.markdown("Conforme pode ser visto, a divisão entre países ricos e pobres (metade dos dados para cada lado) mostra que países com PIB per capita acima da mediana possuem uma variação de consumo muito maior, tendo, por exemplo, a mediana próxima ao máximo dos países mais pobres. Logo, parece haver alguma relação entre PIB per capita e consumo de energia per capita.")
 
-if __name__ == "__main__":
-    main()
+    # Subseção 3.4: Análise de países específicos (Brasil, EUA, China, Luxemburgo)
+    st.header("Análise de países específicos")
+    fig = make_subplots(
+        rows=4, cols=2,
+        subplot_titles=[
+            'PIB per Capita (U$)', '% da participação da energias renováveis'],
+        row_titles=['Brasil', 'EUA', 'China', 'Luxemburgo']
+    )
+
+    index = {1: 'Brazil', 2: 'United States', 3: 'China', 4: 'Luxembourg'}
+    colors = {1: '#00ad00', 2: '#1f77b4', 3: '#ff0000', 4: '#3182EB'}
+
+    for i in index:
+        df1 = df[df['Entity'] == index[i]].dropna(
+            subset=['Year', 'Renewable energy share in the total final energy consumption (%)', 'gdp_per_capita'])
+        fig1 = px.line(data_frame=df1, x='Year',
+                       y='Renewable energy share in the total final energy consumption (%)')
+        fig2 = px.line(data_frame=df1, x='Year', y='gdp_per_capita')
+        fig1.update_traces(line_color=colors[i])
+        fig2.update_traces(line_color=colors[i])
+        for trace in fig1.data:
+            fig.add_trace(trace, row=i, col=2)
+        for trace in fig2.data:
+            fig.add_trace(trace, row=i, col=1)
+
+    fig.update_layout(
+        autosize=False,
+        width=1200,
+        height=800
+    )
+
+    st.plotly_chart(fig)
+    st.markdown("Dentre os países selecionados, alguns parecem apresentar uma certa relação entre o crescimento do PIB per capita e o uso de energias renováveis, como o Brasil e os EUA. Entretanto, podemos notar que na China, aparentemente, o oposto ocorreu. Em Luxemburgo, a participação dessas energias aumentou, mas permanece baixa (ainda mais considerando o seu alto PIB per capita).")
+
+
+# Barra lateral para navegação
+st.sidebar.title("Navegação")
+options = st.sidebar.radio("Selecione uma seção:", [
+    "Análise Global",
+    "Consumo por Localidade",
+    "Relação entre Riqueza e Energias Renováveis",
+])
+
+# Exibir a seção selecionada
+if options == "Análise Global":
+    analyze_global_data()
+elif options == "Consumo por Localidade":
+    consumption_by_location()
+elif options == "Relação entre Riqueza e Energias Renováveis":
+    wealth_renewable_relationship()
