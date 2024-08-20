@@ -15,6 +15,7 @@ import statsmodels.api as sm
 # Função para carregar os dados (com cache para melhor performance)
 
 
+
 @st.cache_data
 def load_data():
     data = pd.read_csv(
@@ -41,8 +42,29 @@ def load_data():
 
 data = load_data()
 
+@st.cache_data
+def fit_linear_regression():
+    df = data['data']
+    brazil_data = df[df['Entity'] == 'Brazil']
+
+    brazil_data = brazil_data[['Year', 'Electricity from fossil fuels (TWh)', 'Electricity from renewables (TWh)']].dropna()
+
+    X = brazil_data['Year'].values.reshape(-1, 1)
+    y_fossil = brazil_data['Electricity from fossil fuels (TWh)'].values
+    y_renewables = brazil_data['Electricity from renewables (TWh)'].values
+    model_fossil = LinearRegression().fit(X, y_fossil)
+    model_renewables = LinearRegression().fit(X, y_renewables)
+    return {
+        "X":X, 
+        "y_fossil":y_fossil, 
+        "y_renewables":y_renewables, 
+        "model_fossil":model_fossil, 
+        "model_renewables":model_renewables
+    }
+
 # Função para plotar mapas cloropléticos animados
 
+model_loaded = fit_linear_regression()
 
 def plot_animated_choropleth_map(df, countries_names_column, color_column, user_title, user_subtitle):
     min_value_color_column = df[color_column].min()
@@ -468,17 +490,11 @@ def wealth_renewable_relationship():
 
 # Seção 4: Regressão linear e previsões
 def linear_regression_prevision():
-    df = data['data']
-    brazil_data = df[df['Entity'] == 'Brazil']
-
-    brazil_data = brazil_data[['Year', 'Electricity from fossil fuels (TWh)', 'Electricity from renewables (TWh)']].dropna()
-
-    X = brazil_data['Year'].values.reshape(-1, 1)
-    y_fossil = brazil_data['Electricity from fossil fuels (TWh)'].values
-    y_renewables = brazil_data['Electricity from renewables (TWh)'].values
-
-    model_fossil = LinearRegression().fit(X, y_fossil)
-    model_renewables = LinearRegression().fit(X, y_renewables)
+    X = model_loaded['X']
+    model_fossil = model_loaded['model_fossil']
+    model_renewables = model_loaded['model_renewables']
+    y_fossil = model_loaded['y_fossil']
+    y_renewables = model_loaded['y_renewables']
 
     future_years = np.array([2023 + i for i in range(10)]).reshape(-1, 1)
     all_years = np.append(X, future_years).reshape(-1, 1)
