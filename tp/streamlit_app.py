@@ -490,6 +490,8 @@ def wealth_renewable_relationship():
 
 # Seção 4: Regressão linear e previsões
 def linear_regression_prevision():
+    st.title("Previsões previsão de produção de energias ")
+
     X = model_loaded['X']
     model_fossil = model_loaded['model_fossil']
     model_renewables = model_loaded['model_renewables']
@@ -500,8 +502,7 @@ def linear_regression_prevision():
     all_years = np.append(X, future_years).reshape(-1, 1)
     fossil_pred_all = model_fossil.predict(all_years)
     renewables_pred_all = model_renewables.predict(all_years)
-
-    st.markdown(f'{X}, {y_fossil}, {y_renewables}')
+    
     # Calcular os IC 95%
     def calculate_confidence_interval(model, X, y, X_all, confidence=0.95):
         y_pred = model.predict(X)
@@ -529,8 +530,6 @@ def linear_regression_prevision():
     overall_min = min(min_fossil, min_renewables)
     overall_max = max(max_fossil, max_renewables)
 
-    st.markdown(f'{all_years.shape}')
-
     # Plotar as previsões
     fig1 = go.Figure()
     fig1.add_trace(go.Scatter(x=X.flatten(), y=y_fossil, mode='markers', name='Dados reais', marker=dict(color='blue')))
@@ -547,6 +546,13 @@ def linear_regression_prevision():
         yaxis_title='Produção de Energia de Combustíveis Fósseis (TWh)',
         title_text='Previsão da Produção de Energia de Combustíveis Fósseis no Brasil',
         yaxis=dict(range=[overall_min, overall_max]),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=-0.2,  
+            xanchor="center",
+            x=0.5
+        )
     )
 
     # Create the second figure for Renewables
@@ -565,11 +571,54 @@ def linear_regression_prevision():
         yaxis_title='Produção de Energia Renovável (TWh)',
         title_text='Previsão da Produção de Energia Renovável no Brasil',
         yaxis=dict(range=[overall_min, overall_max]),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=-0.2,  
+            xanchor="center",
+            x=0.5  
+        )
     )
 
-    # Display the figures in Streamlit
     st.plotly_chart(fig1)
     st.plotly_chart(fig2)
+
+
+    # Previsão
+    # Função para prever a produção de energia para um ano dado e plotar gráfico
+    def predict_and_plot_energy_production(year):
+        year_array = np.array([[year]])
+        fossil_pred = model_fossil.predict(year_array)[0]
+        renewables_pred = model_renewables.predict(year_array)[0]
+        total_energy = fossil_pred + renewables_pred
+        fossil_percentage = (fossil_pred / total_energy) * 100
+        renewables_percentage = (renewables_pred / total_energy) * 100
+
+        # Plotar o gráfico
+        categories = ['Combustíveis Fósseis', 'Fontes Renováveis']
+        values = [fossil_pred, renewables_pred]
+        percentages = [fossil_percentage, renewables_percentage]
+
+        fig = go.Figure()
+        fig.add_trace(go.Bar(
+            x=categories,
+            y=values,
+            marker_color=['blue','green'],
+            text=[f'{value:.2f} TWh\n({percent:.2f}%)' for value, percent in zip(values, percentages)],
+            textposition='outside'
+        ))
+        fig.update_layout(
+            title=f'Previsão de Produção de Energia no Brasil em {year}',
+            xaxis_title='Tipo de Energia',
+            yaxis_title='Produção de Energia (TWh)',
+            yaxis=dict(range=[0, max(values) * 1.2]),  # Adjust y-axis limit
+            autosize=True
+        )
+        st.plotly_chart(fig)
+
+    year = st.slider("Ano de previsão:", min_value=2021, max_value=2050, value=2030)
+    predict_and_plot_energy_production(year)
+
     
 
 # Barra lateral para navegação
