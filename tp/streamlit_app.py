@@ -160,7 +160,7 @@ def analyze_global_data():
     for entity in top_wind:
         df_subset = df_renewable[df_renewable['Entity'] == entity]
         fig.add_trace(go.Scatter(x=df_subset['Year'], y=df_subset['Electricity from wind (TWh)'],
-                        mode='lines', name=entity, showlegend=True), row=1, col=1)
+                        mode='lines', name=entity, showlegend=True, legendgroup='1'), row=1, col=1)
 
     for entity in top_hydro:
         df_subset = df_renewable[df_renewable['Entity'] == entity]
@@ -170,9 +170,31 @@ def analyze_global_data():
     for entity in top_solar:
         df_subset = df_renewable[df_renewable['Entity'] == entity]
         fig.add_trace(go.Scatter(x=df_subset['Year'], y=df_subset['Electricity from solar (TWh)'],
-                        mode='lines', name=entity, showlegend=True, legendgroup='2'), row=3, col=1)
+                        mode='lines', name=entity, showlegend=True, legendgroup='3'), row=3, col=1)
 
-    fig.update_layout(height=1000, width=800)
+    # Update layout for individual legends
+    fig.update_layout(
+        height=1000, width=1000,
+        legend=dict(
+            groupclick="toggleitem"  # Allows toggling individual legends within the groups
+        )
+    )
+
+    # Adjust the position of the legends
+    fig.update_layout(
+        annotations=[
+            dict(x=1, y=1, xref='paper', yref='paper', showarrow=False, text='Wind Energy Legend', font=dict(size=12)),
+            dict(x=1, y=0.65, xref='paper', yref='paper', showarrow=False, text='Hydro Energy Legend', font=dict(size=12)),
+            dict(x=1, y=0.3, xref='paper', yref='paper', showarrow=False, text='Solar Energy Legend', font=dict(size=12))
+        ],
+        legend_tracegroupgap=160,
+        legend=dict(x=1.05, y=1.05, tracegroupgap=160, traceorder="grouped+reversed"),
+        yaxis1=dict(title="Electricity from wind (TWh)"),
+        yaxis2=dict(title="Electricity from hydro (TWh)"),
+        yaxis3=dict(title="Electricity from solar (TWh)"),
+        height=1000, width=800
+    )
+    
     st.plotly_chart(fig)
 
     # Subseção 1.3: Padrões entre fontes fósseis e limpas
