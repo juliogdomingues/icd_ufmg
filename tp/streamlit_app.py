@@ -466,12 +466,99 @@ def wealth_renewable_relationship():
     st.markdown("Dentre os países selecionados, alguns parecem apresentar uma certa relação entre o crescimento do PIB per capita e o uso de energias renováveis, como o Brasil e os EUA. Entretanto, podemos notar que na China, aparentemente, o oposto ocorreu. Em Luxemburgo, a participação dessas energias aumentou, mas permanece baixa (ainda mais considerando o seu alto PIB per capita).")
 
 
+# Seção 4: Regressão linear e previsões
+def linear_regression_prevision():
+    df = data['data']
+    brazil_data = df[df['Entity'] == 'Brazil']
+
+    brazil_data = brazil_data[['Year', 'Electricity from fossil fuels (TWh)', 'Electricity from renewables (TWh)']].dropna()
+
+    X = brazil_data['Year'].values.reshape(-1, 1)
+    y_fossil = brazil_data['Electricity from fossil fuels (TWh)'].values
+    y_renewables = brazil_data['Electricity from renewables (TWh)'].values
+
+    model_fossil = LinearRegression().fit(X, y_fossil)
+    model_renewables = LinearRegression().fit(X, y_renewables)
+
+    future_years = np.array([2023 + i for i in range(10)]).reshape(-1, 1)
+    all_years = np.append(X, future_years).reshape(-1, 1)
+    fossil_pred_all = model_fossil.predict(all_years)
+    renewables_pred_all = model_renewables.predict(all_years)
+
+    # Calcular os IC 95%
+    def calculate_confidence_interval(model, X, y, X_all, confidence=0.95):
+        y_pred = model.predict(X)
+        residual = y - y_pred
+        mean_x = np.mean(X)
+        n = len(X)
+        t = 1.96  # valor t para a confiança de 95% e graus de liberdade grandes
+        s_err = np.sqrt(np.sum(residual**2) / (n - 2))
+        interval = t * s_err * np.sqrt(1/n + (X_all.flatten() - mean_x)**2 / np.sum((X - mean_x)**2))
+        return interval.flatten()
+
+    # IC para combustíveis fósseis
+    fossil_intervals_all = calculate_confidence_interval(model_fossil, X, y_fossil, all_years)
+
+    # IC para renováveis
+    renewables_intervals_all = calculate_confidence_interval(model_renewables, X, y_renewables, all_years)
+
+    # Obter limites do gráfico para manter as escalas semelhantes
+    min_fossil = np.min(np.concatenate((y_fossil, fossil_pred_all - fossil_intervals_all)))
+    max_fossil = np.max(np.concatenate((y_fossil, fossil_pred_all + fossil_intervals_all)))
+    min_renewables = np.min(np.concatenate((y_renewables, renewables_pred_all - renewables_intervals_all)))
+    max_renewables = np.max(np.concatenate((y_renewables, renewables_pred_all + renewables_intervals_all)))
+
+    overall_min = min(min_fossil, min_renewables)
+    overall_max = max(max_fossil, max_renewables)
+
+    st.markdown(f'{X.shape}, {y_fossil.shape}, {y_renewables.shape}')
+
+    # Plotar as previsões
+    fig1 = go.Figure()
+    fig1.add_trace(go.Scatter(x=X, y=y_fossil, mode='markers', name='Dados reais', marker=dict(color='blue')))
+    fig1.add_trace(go.Scatter(x=all_years, y=fossil_pred_all, mode='lines', name='Previsões', line=dict(color='red')))
+    fig1.add_trace(go.Scatter(x=all_years + all_years[::-1], 
+                            y=list(fossil_pred_all - fossil_intervals_all) + list(fossil_pred_all + fossil_intervals_all)[::-1], 
+                            fill='toself', fillcolor='rgba(255, 0, 0, 0.2)', line=dict(color='rgba(255, 0, 0, 0)'), 
+                            name='Intervalo de Confiança de 95%'))
+    # fig1.update_layout(
+    #     height=600,
+    #     width=600,
+    #     showlegend=True,
+    #     xaxis_title='Ano',
+    #     yaxis_title='Produção de Energia de Combustíveis Fósseis (TWh)',
+    #     title_text='Previsão da Produção de Energia de Combustíveis Fósseis no Brasil'
+    # )
+
+    # Create the second figure for Renewables
+    fig2 = go.Figure()
+    fig2.add_trace(go.Scatter(x=X, y=y_renewables, mode='markers', name='Dados reais', marker=dict(color='green')))
+    fig2.add_trace(go.Scatter(x=all_years, y=renewables_pred_all, mode='lines', name='Previsões', line=dict(color='orange')))
+    fig2.add_trace(go.Scatter(x=all_years + all_years[::-1], 
+                            y=list(renewables_pred_all - renewables_intervals_all) + list(renewables_pred_all + renewables_intervals_all)[::-1], 
+                            fill='toself', fillcolor='rgba(255, 165, 0, 0.2)', line=dict(color='rgba(255, 165, 0, 0)'), 
+                            name='Intervalo de Confiança de 95%'))
+    # fig2.update_layout(
+    #     height=600,
+    #     width=600,
+    #     showlegend=True,
+    #     xaxis_title='Ano',
+    #     yaxis_title='Produção de Energia Renovável (TWh)',
+    #     title_text='Previsão da Produção de Energia Renovável no Brasil'
+    # )
+
+    # Display the figures in Streamlit
+    st.plotly_chart(fig1)
+    st.plotly_chart(fig2)
+    
+
 # Barra lateral para navegação
 st.sidebar.title("Navegação")
 options = st.sidebar.radio("Selecione uma seção:", [
     "Análise Global",
     "Consumo por Localidade",
-    "Relação entre Riqueza e Energias Renováveis"
+    "Relação entre Riqueza e Energias Renováveis",
+    "Regressão Linear e previsões"
 ])
 
 # Exibir a seção selecionada
@@ -481,3 +568,5 @@ elif options == "Consumo por Localidade":
     consumption_by_location()
 elif options == "Relação entre Riqueza e Energias Renováveis":
     wealth_renewable_relationship()
+elif options == "Regressão Linear e previsões":
+    linear_regression_prevision()
