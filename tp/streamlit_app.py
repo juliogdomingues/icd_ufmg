@@ -519,6 +519,8 @@ def linear_regression_prevision():
     # IC para renováveis
     renewables_intervals_all = calculate_confidence_interval(model_renewables, X, y_renewables, all_years)
 
+    st.markdown(f'{fossil_intervals_all}, {renewables_intervals_all}')
+
     # Obter limites do gráfico para manter as escalas semelhantes
     min_fossil = np.min(np.concatenate((y_fossil, fossil_pred_all - fossil_intervals_all)))
     max_fossil = np.max(np.concatenate((y_fossil, fossil_pred_all + fossil_intervals_all)))
