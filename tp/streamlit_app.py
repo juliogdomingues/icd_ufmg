@@ -533,7 +533,7 @@ def linear_regression_prevision():
 
     # Plotar as previsões
     fig1 = go.Figure()
-    fig1.add_trace(go.Scatter(x=X, y=y_fossil, mode='markers', name='Dados reais', marker=dict(color='blue')))
+    fig1.add_trace(go.Scatter(x=X.flatten(), y=y_fossil, mode='markers', name='Dados reais', marker=dict(color='blue')))
     fig1.add_trace(go.Scatter(x=all_years, y=fossil_pred_all, mode='lines', name='Previsões', line=dict(color='red')))
     fig1.add_trace(go.Scatter(x=all_years + all_years[::-1], 
                             y=list(fossil_pred_all - fossil_intervals_all) + list(fossil_pred_all + fossil_intervals_all)[::-1], 
@@ -551,7 +551,7 @@ def linear_regression_prevision():
 
     # Create the second figure for Renewables
     fig2 = go.Figure()
-    fig2.add_trace(go.Scatter(x=X, y=y_renewables, mode='markers', name='Dados reais', marker=dict(color='green')))
+    fig2.add_trace(go.Scatter(x=X.flatten(), y=y_renewables, mode='markers', name='Dados reais', marker=dict(color='green')))
     fig2.add_trace(go.Scatter(x=all_years, y=renewables_pred_all, mode='lines', name='Previsões', line=dict(color='orange')))
     fig2.add_trace(go.Scatter(x=all_years + all_years[::-1], 
                             y=list(renewables_pred_all - renewables_intervals_all) + list(renewables_pred_all + renewables_intervals_all)[::-1], 
