@@ -527,7 +527,7 @@ def linear_regression_prevision():
     overall_min = min(min_fossil, min_renewables)
     overall_max = max(max_fossil, max_renewables)
 
-    st.markdown(f'{X.shape}, {y_fossil.shape}, {y_renewables.shape}')
+    st.markdown(f'{X}, {y_fossil.shape}, {y_renewables.shape}')
 
     # Plotar as previsões
     fig1 = go.Figure()
