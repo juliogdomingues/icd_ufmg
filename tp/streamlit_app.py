@@ -52,7 +52,7 @@ def plot_animated_choropleth_map(df, countries_names_column, color_column, user_
                             locations=countries_names_column,
                             locationmode="country names",
                             color=color_column,
-                            animation_frame="Ano",
+                            animation_frame="Year",
                             color_continuous_scale="YlGnBu",
                             range_color=(min_value_color_column, max_value_color_column))
 
