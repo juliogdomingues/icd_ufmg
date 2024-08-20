@@ -160,19 +160,19 @@ def analyze_global_data():
     for entity in top_wind:
         df_subset = df_renewable[df_renewable['Entity'] == entity]
         fig.add_trace(go.Scatter(x=df_subset['Year'], y=df_subset['Electricity from wind (TWh)'],
-                        mode='lines', name=entity), row=1, col=1)
+                        mode='lines', name=entity, showlegend=True), row=1, col=1)
 
     for entity in top_hydro:
         df_subset = df_renewable[df_renewable['Entity'] == entity]
         fig.add_trace(go.Scatter(x=df_subset['Year'], y=df_subset['Electricity from hydro (TWh)'],
-                        mode='lines', name=entity), row=2, col=1)
+                        mode='lines', name=entity, showlegend=True, legendgroup='2'), row=2, col=1)
 
     for entity in top_solar:
         df_subset = df_renewable[df_renewable['Entity'] == entity]
         fig.add_trace(go.Scatter(x=df_subset['Year'], y=df_subset['Electricity from solar (TWh)'],
-                        mode='lines', name=entity), row=3, col=1)
+                        mode='lines', name=entity, showlegend=True, legendgroup='2'), row=3, col=1)
 
-    fig.update_layout(height=1000, width=800, showlegend=True)
+    fig.update_layout(height=1000, width=800)
     st.plotly_chart(fig)
 
     # Subseção 1.3: Padrões entre fontes fósseis e limpas
