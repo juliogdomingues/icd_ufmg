@@ -490,7 +490,7 @@ def wealth_renewable_relationship():
 
 # Seção 4: Regressão linear e previsões
 def linear_regression_prevision():
-    X = model_loaded['X']
+    X = model_loaded['X'][0]
     model_fossil = model_loaded['model_fossil']
     model_renewables = model_loaded['model_renewables']
     y_fossil = model_loaded['y_fossil']
@@ -527,7 +527,7 @@ def linear_regression_prevision():
     overall_min = min(min_fossil, min_renewables)
     overall_max = max(max_fossil, max_renewables)
 
-    st.markdown(f'{X}, {y_fossil.shape}, {y_renewables.shape}')
+    st.markdown(f'{X}, {y_fossil}, {y_renewables}')
 
     # Plotar as previsões
     fig1 = go.Figure()
