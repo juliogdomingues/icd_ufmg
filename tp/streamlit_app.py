@@ -545,7 +545,7 @@ def linear_regression_prevision():
         showlegend=True,
         xaxis_title='Ano',
         yaxis_title='Produção de Energia de Combustíveis Fósseis (TWh)',
-        title_text='Previsão da Produção de Energia de Combustíveis Fósseis no Brasil'
+        title_text='Previsão da Produção de Energia de Combustíveis Fósseis no Brasil',
         yaxis=dict(range=[overall_min, overall_max]),
     )
 
@@ -563,7 +563,7 @@ def linear_regression_prevision():
         showlegend=True,
         xaxis_title='Ano',
         yaxis_title='Produção de Energia Renovável (TWh)',
-        title_text='Previsão da Produção de Energia Renovável no Brasil'
+        title_text='Previsão da Produção de Energia Renovável no Brasil',
         yaxis=dict(range=[overall_min, overall_max]),
     )
 
