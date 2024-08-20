@@ -266,7 +266,6 @@ def analyze_global_data():
 
 # Seção 2: Consumo por Localidade
 
-
 def consumption_by_location():
     st.title("Consumo de energia por localização")
 
@@ -315,14 +314,14 @@ def consumption_by_location():
         'Year >= 2000 and Year <= 2021')
     plot_animated_choropleth_map(hydro_energy_participation_per_country, 'Entity',
                                  'Hydro (% electricity)',
-                                 'Taxa de participação de fontes de energia hidrelétricas na matriz de cada país (2000-2021)',
+                                 'Taxa de participação de energias hidrelétricas nas matrizes mundiais (2000-2021)',
                                  'Porcentagem (%)')
 
     # Gráfico de linhas: Fontes hidrelétricas (Média Global)
     global_hydro_energy_participation = hydro_energy_participation_per_country.query(
         'Entity == "World" and Year >= 2000 and Year <= 2021')[['Year', 'Hydro (% electricity)']]
     plot_line_chart_energy_source_use(global_hydro_energy_participation, 'Year', 'Hydro (% electricity)',
-                                      'Taxa média global de participação de fontes de energia hidrelétricas nas matrizes dos países (2000-2021)',
+                                      'Taxa média global de participação de energias hidrelétricas nas matrizes mundiais(2000-2021)',
                                       'Ano', 'Porcentagem (%)')
 
     # Mapa: Fontes solares
@@ -333,14 +332,14 @@ def consumption_by_location():
         'Year >= 2000 and Year <= 2021')
     plot_animated_choropleth_map(solar_energy_participation_per_country, 'Entity',
                                  'Solar (% electricity)',
-                                 'Taxa de participação de energia solar na matriz  de cada país (2000-2021)',
+                                 'Taxa de participação de energia solar nas matrizes mundiais (2000-2021)',
                                  'Porcentagem (%)')
 
     # Gráfico de linhas: Fontes solares (Média Global)
     global_solar_energy_participation = solar_energy_participation_per_country.query(
         'Entity == "World" and Year >= 2000 and Year <= 2021')[['Year', 'Solar (% electricity)']]
     plot_line_chart_energy_source_use(global_solar_energy_participation, 'Year', 'Solar (% electricity)',
-                                      'Taxa média global de participação de fontes de energia solares nas matrizes dos países (2000-2021)',
+                                      'Taxa média global de participação de energia solar nas matrizes mundiais (2000-2021)',
                                       'Ano', 'Porcentagem (%)')
 
     # Mapa: Fontes eólicas
@@ -351,14 +350,14 @@ def consumption_by_location():
         'Year >= 2000 and Year <= 2021')
     plot_animated_choropleth_map(wind_energy_participation_per_country, 'Entity',
                                  'Wind (% electricity)',
-                                 'Taxa de participação de energia eólica na matriz energética de cada país (2000-2021)',
+                                 'Taxa de participação de energia eólica nas matrizes mundiais (2000-2021)',
                                  'Porcentagem (%)')
 
     # Gráfico de linhas: Fontes eólicas (Média Global)
     global_wind_energy_participation = wind_energy_participation_per_country.query(
         'Entity == "World" and Year >= 2000 and Year <= 2021')[['Year', 'Wind (% electricity)']]
     plot_line_chart_energy_source_use(global_wind_energy_participation, 'Year', 'Wind (% electricity)',
-                                      'Taxa média global de participação de fontes de energia eólicas nas matrizes dos países (2000-2021)',
+                                      'Taxa média global de participação de energias eólicas nas matrizes mundiais (2000-2021)',
                                       'Ano', 'Porcentagem (%)')
 
 
