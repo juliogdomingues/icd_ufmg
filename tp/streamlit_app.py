@@ -490,8 +490,10 @@ def wealth_renewable_relationship():
 
 # Seção 4: Regressão linear e previsões
 def linear_regression_prevision():
-    st.title("Previsões previsão de produção de energias ")
+    st.title("Previsões de produção de energias no Brasil")
+    st.markdown("Aqui estão listadas alguns gráficos que podem indicar previsões sobre a produção e participação das energias fósseis e renováveis no Brasil")
 
+    
     X = model_loaded['X']
     model_fossil = model_loaded['model_fossil']
     model_renewables = model_loaded['model_renewables']
@@ -615,6 +617,9 @@ def linear_regression_prevision():
             autosize=True
         )
         st.plotly_chart(fig)
+
+    st.header("Previsão da participação das energias no Brasil")
+    st.markdown("Utilizando o modelo de regressão linear, cujo gráfico foi apresentado anteriormente, podemos prever a participação dos tipos de energia (renovável vs. fóssil) no Brasil nos próximos anos.")
 
     year = st.slider("Ano de previsão:", min_value=2021, max_value=2050, value=2030)
     predict_and_plot_energy_production(year)
