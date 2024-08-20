@@ -224,18 +224,43 @@ def analyze_global_data():
                .rename(columns={'Electricity from renewables (TWh)': 'Renovável', 'Electricity from fossil fuels (TWh)': 'Fóssil'})
                [["Entity", "Year", "Renovável", "Fóssil"]])
 
-    fig, ax = plt.subplots(1, 2, figsize=(15, 5), sharey=True)
+    fig_renovavel = go.Figure()
+    for entity in df_comp['Entity'].unique():
+        df_subset = df_comp[df_comp['Entity'] == entity]
+        fig_renovavel.add_trace(go.Scatter(x=df_subset['Year'], y=df_subset['Renovável'],
+                                        mode='lines', name=entity))
 
-    sns.lineplot(x='Year', y='Renovável', data=df_comp, hue='Entity', ax=ax[0])
-    ax[0].set_ylim(0, 5300)
-    ax[0].set_title('Renováveis (Top 10 países)')
+    fig_renovavel.update_layout(
+        title='Renováveis (Top 10 países)',
+        xaxis_title='Ano',
+        yaxis_title='Energia Renovável',
+        yaxis=dict(range=[0, 5300]),  # Set the y-axis limit
+        height=500,
+        width=750  # Adjust size for single plot
+    )
 
-    sns.lineplot(x='Year', y='Fóssil', data=df_comp, hue='Entity', ax=ax[1])
-    ax[1].set_ylim(0, 5300)
-    ax[1].set_title('Fósseis (Top 10 países)')
+    st.plotly_chart(fig_renovavel)
 
-    plt.tight_layout()
-    st.pyplot(fig)
+    fig_fossil = go.Figure()
+
+    for entity in df_comp['Entity'].unique():
+        df_subset = df_comp[df_comp['Entity'] == entity]
+        fig_fossil.add_trace(go.Scatter(x=df_subset['Year'], y=df_subset['Fóssil'],
+                                        mode='lines', name=entity))
+
+    # Update layout for Fósseis plot
+    fig_fossil.update_layout(
+        title='Fósseis (Top 10 países)',
+        xaxis_title='Ano',
+        yaxis_title='Energia Fóssil',
+        yaxis=dict(range=[0, 5300]),  # Set the y-axis limit
+        height=500,
+        width=750  # Adjust size for single plot
+    )
+
+    st.plotly_chart(fig_fossil)
+
+
 
 # Seção 2: Consumo por Localidade
 
