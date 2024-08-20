@@ -529,14 +529,14 @@ def linear_regression_prevision():
     overall_min = min(min_fossil, min_renewables)
     overall_max = max(max_fossil, max_renewables)
 
-    st.markdown(f'{fossil_intervals_all}, {renewables_intervals_all}')
+    st.markdown(f'{all_years.shape}')
 
     # Plotar as previsões
     fig1 = go.Figure()
     fig1.add_trace(go.Scatter(x=X.flatten(), y=y_fossil, mode='markers', name='Dados reais', marker=dict(color='blue')))
-    fig1.add_trace(go.Scatter(x=all_years, y=fossil_pred_all, mode='lines', name='Previsões', line=dict(color='red')))
-    fig1.add_trace(go.Scatter(x=all_years + all_years[::-1], 
-                            y=list(fossil_pred_all - fossil_intervals_all) + list(fossil_pred_all + fossil_intervals_all)[::-1], 
+    fig1.add_trace(go.Scatter(x=all_years.flatten(), y=fossil_pred_all, mode='lines', name='Previsões', line=dict(color='red')))
+    fig1.add_trace(go.Scatter(x=np.concatenate([all_years.flatten(),all_years[::-1].flatten()]), 
+                            y=np.concatenate([fossil_pred_all - fossil_intervals_all, (fossil_pred_all + fossil_intervals_all)[::-1]]), 
                             fill='toself', fillcolor='rgba(255, 0, 0, 0.2)', line=dict(color='rgba(255, 0, 0, 0)'), 
                             name='Intervalo de Confiança de 95%'))
     fig1.update_layout(
@@ -552,9 +552,9 @@ def linear_regression_prevision():
     # Create the second figure for Renewables
     fig2 = go.Figure()
     fig2.add_trace(go.Scatter(x=X.flatten(), y=y_renewables, mode='markers', name='Dados reais', marker=dict(color='green')))
-    fig2.add_trace(go.Scatter(x=all_years, y=renewables_pred_all, mode='lines', name='Previsões', line=dict(color='orange')))
-    fig2.add_trace(go.Scatter(x=all_years + all_years[::-1], 
-                            y=list(renewables_pred_all - renewables_intervals_all) + list(renewables_pred_all + renewables_intervals_all)[::-1], 
+    fig2.add_trace(go.Scatter(x=all_years.flatten(), y=renewables_pred_all, mode='lines', name='Previsões', line=dict(color='orange')))
+    fig2.add_trace(go.Scatter(x=np.concatenate([all_years.flatten(),all_years[::-1].flatten()]), 
+                            y=np.concatenate([renewables_pred_all - renewables_intervals_all, (renewables_pred_all + renewables_intervals_all)[::-1]]), 
                             fill='toself', fillcolor='rgba(255, 165, 0, 0.2)', line=dict(color='rgba(255, 165, 0, 0)'), 
                             name='Intervalo de Confiança de 95%'))
     fig2.update_layout(
