@@ -52,13 +52,13 @@ def plot_animated_choropleth_map(df, countries_names_column, color_column, user_
                             locations=countries_names_column,
                             locationmode="country names",
                             color=color_column,
-                            animation_frame="Year",
+                            animation_frame="Ano",
                             color_continuous_scale="YlGnBu",
                             range_color=(min_value_color_column, max_value_color_column))
 
     df_plot.update_geos(projection_type="natural earth")
 
-    df_plot.update_layout(title=user_title, title_x=0.5, font_size=15,
+    df_plot.update_layout(title=user_title, font_size=15,
                           coloraxis_colorbar={"title": f'{user_subtitle}'}, height=700)
 
     st.plotly_chart(df_plot)
@@ -70,16 +70,18 @@ def plot_line_chart_energy_source_use(df, x_axis, y_axis, user_title, x_axis_use
     df_plot = px.line(df, x=x_axis, y=y_axis,
                       color_discrete_sequence=['mediumseagreen'])
 
-    df_plot.update_layout(title=user_title,
-                          title_x=0.5,
-                          font_size=15,
-                          xaxis_title=x_axis_user_title,
-                          yaxis_title=y_axis_user_title)
+    df_plot.update_layout(
+        title=user_title,
+        font_size=15,
+        xaxis_title=x_axis_user_title,
+        yaxis_title=y_axis_user_title,
+        height=500,
+        width=800
+    )
 
     st.plotly_chart(df_plot)
 
 # Seção 1: Análise Global
-
 
 def analyze_global_data():
     st.title("Análise mundial da energia sustentável")
