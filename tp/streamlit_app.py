@@ -468,7 +468,8 @@ def wealth_renewable_relationship():
 
 # Seção 4: Regressão linear e previsões
 def linear_regression_prevision():
-    brazil_data = data[data['Entity'] == 'Brazil']
+    df = data['data']
+    brazil_data = df[df['Entity'] == 'Brazil']
 
     brazil_data = brazil_data[['Year', 'Electricity from fossil fuels (TWh)', 'Electricity from renewables (TWh)']].dropna()
 
