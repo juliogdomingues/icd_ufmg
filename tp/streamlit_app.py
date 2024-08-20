@@ -491,7 +491,7 @@ def wealth_renewable_relationship():
 # Seção 4: Regressão linear e previsões
 def linear_regression_prevision():
     st.title("Previsões de produção de energias no Brasil")
-    st.markdown("Aqui estão listadas alguns gráficos que podem indicar previsões sobre a produção e participação das energias fósseis e renováveis no Brasil")
+    st.markdown("Aqui estão listadas alguns gráficos que podem indicar previsões sobre a produção e participação das energias fósseis e renováveis no Brasil.")
 
     
     X = model_loaded['X']
@@ -632,7 +632,7 @@ options = st.sidebar.radio("Selecione uma seção:", [
     "Análise Global",
     "Consumo por Localidade",
     "Relação entre Riqueza e Energias Renováveis",
-    "Regressão Linear e previsões"
+    "Previsões no Brasil"
 ])
 
 # Exibir a seção selecionada
@@ -642,5 +642,5 @@ elif options == "Consumo por Localidade":
     consumption_by_location()
 elif options == "Relação entre Riqueza e Energias Renováveis":
     wealth_renewable_relationship()
-elif options == "Regressão Linear e previsões":
+elif options == "Previsões no Brasil":
     linear_regression_prevision()
