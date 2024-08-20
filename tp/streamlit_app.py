@@ -15,6 +15,7 @@ import statsmodels.api as sm
 # Função para carregar os dados (com cache para melhor performance)
 
 
+
 @st.cache_data
 def load_data():
     data = pd.read_csv(
@@ -41,8 +42,29 @@ def load_data():
 
 data = load_data()
 
+@st.cache_data
+def fit_linear_regression():
+    df = data['data']
+    brazil_data = df[df['Entity'] == 'Brazil']
+
+    brazil_data = brazil_data[['Year', 'Electricity from fossil fuels (TWh)', 'Electricity from renewables (TWh)']].dropna()
+
+    X = brazil_data['Year'].values.reshape(-1, 1)
+    y_fossil = brazil_data['Electricity from fossil fuels (TWh)'].values
+    y_renewables = brazil_data['Electricity from renewables (TWh)'].values
+    model_fossil = LinearRegression().fit(X, y_fossil)
+    model_renewables = LinearRegression().fit(X, y_renewables)
+    return {
+        "X":X, 
+        "y_fossil":y_fossil, 
+        "y_renewables":y_renewables, 
+        "model_fossil":model_fossil, 
+        "model_renewables":model_renewables
+    }
+
 # Função para plotar mapas cloropléticos animados
 
+model_loaded = fit_linear_regression()
 
 def plot_animated_choropleth_map(df, countries_names_column, color_column, user_title, user_subtitle):
     min_value_color_column = df[color_column].min()
@@ -58,7 +80,7 @@ def plot_animated_choropleth_map(df, countries_names_column, color_column, user_
 
     df_plot.update_geos(projection_type="natural earth")
 
-    df_plot.update_layout(title=user_title, title_x=0.5, font_size=15,
+    df_plot.update_layout(title=user_title, font_size=15,
                           coloraxis_colorbar={"title": f'{user_subtitle}'}, height=700)
 
     st.plotly_chart(df_plot)
@@ -70,16 +92,18 @@ def plot_line_chart_energy_source_use(df, x_axis, y_axis, user_title, x_axis_use
     df_plot = px.line(df, x=x_axis, y=y_axis,
                       color_discrete_sequence=['mediumseagreen'])
 
-    df_plot.update_layout(title=user_title,
-                          title_x=0.5,
-                          font_size=15,
-                          xaxis_title=x_axis_user_title,
-                          yaxis_title=y_axis_user_title)
+    df_plot.update_layout(
+        title=user_title,
+        font_size=15,
+        xaxis_title=x_axis_user_title,
+        yaxis_title=y_axis_user_title,
+        height=500,
+        width=800
+    )
 
     st.plotly_chart(df_plot)
 
 # Seção 1: Análise Global
-
 
 def analyze_global_data():
     st.title("Análise mundial da energia sustentável")
@@ -150,25 +174,63 @@ def analyze_global_data():
                  .nlargest(10, 'Electricity from solar (TWh)')
                  .reset_index()['Entity'])
 
-    fig, ax = plt.subplots(3, 1, figsize=(10, 10))
+    # Gráfico de linhas: Produção de energia por país(vento, água e solar)
 
-    sns.lineplot(x='Year', y='Electricity from wind (TWh)', hue='Entity',
-                 data=df_renewable[df_renewable['Entity'].isin(top_wind)], ax=ax[0])
-    ax[0].legend(loc='upper left')
-    ax[0].set_title('Produção de energia eólica (Top 10 países)')
+    fig_wind = go.Figure()
 
-    sns.lineplot(x='Year', y='Electricity from hydro (TWh)', hue='Entity',
-                 data=df_renewable[df_renewable['Entity'].isin(top_hydro)], ax=ax[1])
-    ax[1].legend(loc='upper left')
-    ax[1].set_title('Produção de energia hidrelétrica (Top 10 países)')
+    for entity in top_wind:
+        df_subset = df_renewable[df_renewable['Entity'] == entity]
+        fig_wind.add_trace(go.Scatter(x=df_subset['Year'], y=df_subset['Electricity from wind (TWh)'],
+                                    mode='lines', name=entity))
 
-    sns.lineplot(x='Year', y='Electricity from solar (TWh)', hue='Entity',
-                 data=df_renewable[df_renewable['Entity'].isin(top_solar)], ax=ax[2])
-    ax[2].legend(loc='upper left')
-    ax[2].set_title('Produção de energia solar (Top 10 países)')
+    fig_wind.update_layout(
+        title='Produção de energia eólica (Top 10 países)',
+        xaxis_title='Ano',
+        yaxis_title='Produção de eletricidade (TWh)',
+        legend_title='Países',
+        height=500,
+        width=800
+    )
 
-    plt.tight_layout()
-    st.pyplot(fig)
+    st.plotly_chart(fig_wind)
+
+    # Hydro energy plot
+    fig_hydro = go.Figure()
+
+    for entity in top_hydro:
+        df_subset = df_renewable[df_renewable['Entity'] == entity]
+        fig_hydro.add_trace(go.Scatter(x=df_subset['Year'], y=df_subset['Electricity from hydro (TWh)'],
+                                    mode='lines', name=entity))
+
+    fig_hydro.update_layout(
+        title='Produção de energia hidrelétrica (Top 10 países)',
+        xaxis_title='Ano',
+        yaxis_title='Produção de eletricidade (TWh)',
+        legend_title='Países',
+        height=500,
+        width=800
+    )
+
+    st.plotly_chart(fig_hydro)
+
+    # Solar energy plot
+    fig_solar = go.Figure()
+
+    for entity in top_solar:
+        df_subset = df_renewable[df_renewable['Entity'] == entity]
+        fig_solar.add_trace(go.Scatter(x=df_subset['Year'], y=df_subset['Electricity from solar (TWh)'],
+                                    mode='lines', name=entity))
+
+    fig_solar.update_layout(
+        title='Produção de energia solar (Top 10 países)',
+        xaxis_title='Ano',
+        yaxis_title='Produção de eletricidade (TWh)',
+        legend_title='Países',
+        height=500,
+        width=800
+    )
+
+    st.plotly_chart(fig_solar)
 
     # Subseção 1.3: Padrões entre fontes fósseis e limpas
     st.header("Comparação entre fontes fósseis e limpas")
@@ -186,21 +248,45 @@ def analyze_global_data():
                .rename(columns={'Electricity from renewables (TWh)': 'Renovável', 'Electricity from fossil fuels (TWh)': 'Fóssil'})
                [["Entity", "Year", "Renovável", "Fóssil"]])
 
-    fig, ax = plt.subplots(1, 2, figsize=(15, 5), sharey=True)
+    fig_renovavel = go.Figure()
+    for entity in df_comp['Entity'].unique():
+        df_subset = df_comp[df_comp['Entity'] == entity]
+        fig_renovavel.add_trace(go.Scatter(x=df_subset['Year'], y=df_subset['Renovável'],
+                                        mode='lines', name=entity))
 
-    sns.lineplot(x='Year', y='Renovável', data=df_comp, hue='Entity', ax=ax[0])
-    ax[0].set_ylim(0, 5300)
-    ax[0].set_title('Renováveis (Top 10 países)')
+    fig_renovavel.update_layout(
+        title='Renováveis (Top 10 países)',
+        xaxis_title='Ano',
+        yaxis_title='Energia Renovável',
+        yaxis=dict(range=[0, 5300]),  # Set the y-axis limit
+        height=500,
+        width=750  # Adjust size for single plot
+    )
 
-    sns.lineplot(x='Year', y='Fóssil', data=df_comp, hue='Entity', ax=ax[1])
-    ax[1].set_ylim(0, 5300)
-    ax[1].set_title('Fósseis (Top 10 países)')
+    st.plotly_chart(fig_renovavel)
 
-    plt.tight_layout()
-    st.pyplot(fig)
+    fig_fossil = go.Figure()
+
+    for entity in df_comp['Entity'].unique():
+        df_subset = df_comp[df_comp['Entity'] == entity]
+        fig_fossil.add_trace(go.Scatter(x=df_subset['Year'], y=df_subset['Fóssil'],
+                                        mode='lines', name=entity))
+
+    # Update layout for Fósseis plot
+    fig_fossil.update_layout(
+        title='Fósseis (Top 10 países)',
+        xaxis_title='Ano',
+        yaxis_title='Energia Fóssil',
+        yaxis=dict(range=[0, 5300]),  # Set the y-axis limit
+        height=500,
+        width=750  # Adjust size for single plot
+    )
+
+    st.plotly_chart(fig_fossil)
+
+
 
 # Seção 2: Consumo por Localidade
-
 
 def consumption_by_location():
     st.title("Consumo de energia por localização")
@@ -250,14 +336,14 @@ def consumption_by_location():
         'Year >= 2000 and Year <= 2021')
     plot_animated_choropleth_map(hydro_energy_participation_per_country, 'Entity',
                                  'Hydro (% electricity)',
-                                 'Taxa de participação de fontes de energia hidrelétricas na matriz de cada país (2000-2021)',
+                                 'Taxa de participação de energias hidrelétricas nas matrizes mundiais (2000-2021)',
                                  'Porcentagem (%)')
 
     # Gráfico de linhas: Fontes hidrelétricas (Média Global)
     global_hydro_energy_participation = hydro_energy_participation_per_country.query(
         'Entity == "World" and Year >= 2000 and Year <= 2021')[['Year', 'Hydro (% electricity)']]
     plot_line_chart_energy_source_use(global_hydro_energy_participation, 'Year', 'Hydro (% electricity)',
-                                      'Taxa média global de participação de fontes de energia hidrelétricas nas matrizes dos países (2000-2021)',
+                                      'Taxa média global de participação de energias hidrelétricas nas matrizes mundiais(2000-2021)',
                                       'Ano', 'Porcentagem (%)')
 
     # Mapa: Fontes solares
@@ -268,14 +354,14 @@ def consumption_by_location():
         'Year >= 2000 and Year <= 2021')
     plot_animated_choropleth_map(solar_energy_participation_per_country, 'Entity',
                                  'Solar (% electricity)',
-                                 'Taxa de participação de energia solar na matriz  de cada país (2000-2021)',
+                                 'Taxa de participação de energia solar nas matrizes mundiais (2000-2021)',
                                  'Porcentagem (%)')
 
     # Gráfico de linhas: Fontes solares (Média Global)
     global_solar_energy_participation = solar_energy_participation_per_country.query(
         'Entity == "World" and Year >= 2000 and Year <= 2021')[['Year', 'Solar (% electricity)']]
     plot_line_chart_energy_source_use(global_solar_energy_participation, 'Year', 'Solar (% electricity)',
-                                      'Taxa média global de participação de fontes de energia solares nas matrizes dos países (2000-2021)',
+                                      'Taxa média global de participação de energia solar nas matrizes mundiais (2000-2021)',
                                       'Ano', 'Porcentagem (%)')
 
     # Mapa: Fontes eólicas
@@ -286,14 +372,14 @@ def consumption_by_location():
         'Year >= 2000 and Year <= 2021')
     plot_animated_choropleth_map(wind_energy_participation_per_country, 'Entity',
                                  'Wind (% electricity)',
-                                 'Taxa de participação de energia eólica na matriz energética de cada país (2000-2021)',
+                                 'Taxa de participação de energia eólica nas matrizes mundiais (2000-2021)',
                                  'Porcentagem (%)')
 
     # Gráfico de linhas: Fontes eólicas (Média Global)
     global_wind_energy_participation = wind_energy_participation_per_country.query(
         'Entity == "World" and Year >= 2000 and Year <= 2021')[['Year', 'Wind (% electricity)']]
     plot_line_chart_energy_source_use(global_wind_energy_participation, 'Year', 'Wind (% electricity)',
-                                      'Taxa média global de participação de fontes de energia eólicas nas matrizes dos países (2000-2021)',
+                                      'Taxa média global de participação de energias eólicas nas matrizes mundiais (2000-2021)',
                                       'Ano', 'Porcentagem (%)')
 
 
@@ -365,6 +451,9 @@ def wealth_renewable_relationship():
 
     # Subseção 3.4: Análise de países específicos (Brasil, EUA, China, Luxemburgo)
     st.header("Análise de países específicos")
+    
+    st.markdown("A efeito de comparação com o Brasil em relação ao PIB per Capita e porcentagem de participação de energias renováveis, foram selecionados os países: Estados Unidos, China e Luxemburgo. ")
+    
     fig = make_subplots(
         rows=4, cols=2,
         subplot_titles=[
@@ -390,13 +479,152 @@ def wealth_renewable_relationship():
 
     fig.update_layout(
         autosize=False,
-        width=1200,
-        height=800
+        width=1000,
+        height=800,
+        margin=dict(r=10)
     )
 
     st.plotly_chart(fig)
     st.markdown("Dentre os países selecionados, alguns parecem apresentar uma certa relação entre o crescimento do PIB per capita e o uso de energias renováveis, como o Brasil e os EUA. Entretanto, podemos notar que na China, aparentemente, o oposto ocorreu. Em Luxemburgo, a participação dessas energias aumentou, mas permanece baixa (ainda mais considerando o seu alto PIB per capita).")
 
+
+# Seção 4: Regressão linear e previsões
+def linear_regression_prevision():
+    st.title("Previsões de produção de energias no Brasil")
+    st.markdown("Aqui estão listadas alguns gráficos que podem indicar previsões sobre a produção e participação das energias fósseis e renováveis no Brasil.")
+
+    
+    X = model_loaded['X']
+    model_fossil = model_loaded['model_fossil']
+    model_renewables = model_loaded['model_renewables']
+    y_fossil = model_loaded['y_fossil']
+    y_renewables = model_loaded['y_renewables']
+
+    future_years = np.array([2023 + i for i in range(10)]).reshape(-1, 1)
+    all_years = np.append(X, future_years).reshape(-1, 1)
+    fossil_pred_all = model_fossil.predict(all_years)
+    renewables_pred_all = model_renewables.predict(all_years)
+    
+    # Calcular os IC 95%
+    def calculate_confidence_interval(model, X, y, X_all, confidence=0.95):
+        y_pred = model.predict(X)
+        residual = y - y_pred
+        mean_x = np.mean(X)
+        n = len(X)
+        t = 1.96  # valor t para a confiança de 95% e graus de liberdade grandes
+        s_err = np.sqrt(np.sum(residual**2) / (n - 2))
+        interval = t * s_err * np.sqrt(1/n + (X_all.flatten() - mean_x)**2 / np.sum((X - mean_x)**2))
+        return interval.flatten()
+
+    # IC para combustíveis fósseis
+    fossil_intervals_all = calculate_confidence_interval(model_fossil, X, y_fossil, all_years)
+
+    # IC para renováveis
+    renewables_intervals_all = calculate_confidence_interval(model_renewables, X, y_renewables, all_years)
+
+
+    # Obter limites do gráfico para manter as escalas semelhantes
+    min_fossil = np.min(np.concatenate((y_fossil, fossil_pred_all - fossil_intervals_all)))
+    max_fossil = np.max(np.concatenate((y_fossil, fossil_pred_all + fossil_intervals_all)))
+    min_renewables = np.min(np.concatenate((y_renewables, renewables_pred_all - renewables_intervals_all)))
+    max_renewables = np.max(np.concatenate((y_renewables, renewables_pred_all + renewables_intervals_all)))
+
+    overall_min = min(min_fossil, min_renewables)
+    overall_max = max(max_fossil, max_renewables)
+
+    # Plotar as previsões
+    fig1 = go.Figure()
+    fig1.add_trace(go.Scatter(x=X.flatten(), y=y_fossil, mode='markers', name='Dados reais', marker=dict(color='blue')))
+    fig1.add_trace(go.Scatter(x=all_years.flatten(), y=fossil_pred_all, mode='lines', name='Previsões', line=dict(color='red')))
+    fig1.add_trace(go.Scatter(x=np.concatenate([all_years.flatten(),all_years[::-1].flatten()]), 
+                            y=np.concatenate([fossil_pred_all - fossil_intervals_all, (fossil_pred_all + fossil_intervals_all)[::-1]]), 
+                            fill='toself', fillcolor='rgba(255, 0, 0, 0.2)', line=dict(color='rgba(255, 0, 0, 0)'), 
+                            name='Intervalo de Confiança de 95%'))
+    fig1.update_layout(
+        height=600,
+        width=1000,
+        showlegend=True,
+        xaxis_title='Ano',
+        yaxis_title='Produção de Energia de Combustíveis Fósseis (TWh)',
+        title_text='Previsão da Produção de Energia de Combustíveis Fósseis no Brasil',
+        yaxis=dict(range=[overall_min, overall_max]),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=-0.2,  
+            xanchor="center",
+            x=0.5
+        )
+    )
+
+    # Create the second figure for Renewables
+    fig2 = go.Figure()
+    fig2.add_trace(go.Scatter(x=X.flatten(), y=y_renewables, mode='markers', name='Dados reais', marker=dict(color='green')))
+    fig2.add_trace(go.Scatter(x=all_years.flatten(), y=renewables_pred_all, mode='lines', name='Previsões', line=dict(color='orange')))
+    fig2.add_trace(go.Scatter(x=np.concatenate([all_years.flatten(),all_years[::-1].flatten()]), 
+                            y=np.concatenate([renewables_pred_all - renewables_intervals_all, (renewables_pred_all + renewables_intervals_all)[::-1]]), 
+                            fill='toself', fillcolor='rgba(255, 165, 0, 0.2)', line=dict(color='rgba(255, 165, 0, 0)'), 
+                            name='Intervalo de Confiança de 95%'))
+    fig2.update_layout(
+        height=600,
+        width=1000,
+        showlegend=True,
+        xaxis_title='Ano',
+        yaxis_title='Produção de Energia Renovável (TWh)',
+        title_text='Previsão da Produção de Energia Renovável no Brasil',
+        yaxis=dict(range=[overall_min, overall_max]),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=-0.2,  
+            xanchor="center",
+            x=0.5  
+        )
+    )
+
+    st.plotly_chart(fig1)
+    st.plotly_chart(fig2)
+
+
+    # Previsão
+    # Função para prever a produção de energia para um ano dado e plotar gráfico
+    def predict_and_plot_energy_production(year):
+        year_array = np.array([[year]])
+        fossil_pred = model_fossil.predict(year_array)[0]
+        renewables_pred = model_renewables.predict(year_array)[0]
+        total_energy = fossil_pred + renewables_pred
+        fossil_percentage = (fossil_pred / total_energy) * 100
+        renewables_percentage = (renewables_pred / total_energy) * 100
+
+        # Plotar o gráfico
+        categories = ['Combustíveis Fósseis', 'Fontes Renováveis']
+        values = [fossil_pred, renewables_pred]
+        percentages = [fossil_percentage, renewables_percentage]
+
+        fig = go.Figure()
+        fig.add_trace(go.Bar(
+            x=categories,
+            y=values,
+            marker_color=['blue','green'],
+            text=[f'{value:.2f} TWh\n({percent:.2f}%)' for value, percent in zip(values, percentages)],
+            textposition='outside'
+        ))
+        fig.update_layout(
+            title=f'Previsão de Produção de Energia no Brasil em {year}',
+            xaxis_title='Tipo de Energia',
+            yaxis_title='Produção de Energia (TWh)',
+            yaxis=dict(range=[0, max(values) * 1.2]),  # Adjust y-axis limit
+            autosize=True
+        )
+        st.plotly_chart(fig)
+
+    st.header("Previsão da participação das energias no Brasil")
+    st.markdown("Utilizando o modelo de regressão linear, cujo gráfico foi apresentado anteriormente, podemos prever a participação dos tipos de energia (renovável vs. fóssil) no Brasil nos próximos anos.")
+
+    year = st.slider("Ano de previsão:", min_value=2021, max_value=2050, value=2030)
+    predict_and_plot_energy_production(year)
+
+    
 
 # Barra lateral para navegação
 st.sidebar.title("Navegação")
@@ -404,6 +632,7 @@ options = st.sidebar.radio("Selecione uma seção:", [
     "Análise Global",
     "Consumo por Localidade",
     "Relação entre Riqueza e Energias Renováveis",
+    "Previsões no Brasil"
 ])
 
 # Exibir a seção selecionada
@@ -413,3 +642,5 @@ elif options == "Consumo por Localidade":
     consumption_by_location()
 elif options == "Relação entre Riqueza e Energias Renováveis":
     wealth_renewable_relationship()
+elif options == "Previsões no Brasil":
+    linear_regression_prevision()
