@@ -152,44 +152,61 @@ def analyze_global_data():
 
     # Gráfico de linhas: Produção de energia por país(vento, água e solar)
 
-    fig = make_subplots(rows=3, cols=1, shared_xaxes=True, vertical_spacing=0.1)
+    fig_wind = go.Figure()
 
     for entity in top_wind:
         df_subset = df_renewable[df_renewable['Entity'] == entity]
-        fig.add_trace(go.Scatter(x=df_subset['Year'], y=df_subset['Electricity from wind (TWh)'],
-                        mode='lines', name=entity, showlegend=True, legendgroup='1'), row=1, col=1)
+        fig_wind.add_trace(go.Scatter(x=df_subset['Year'], y=df_subset['Electricity from wind (TWh)'],
+                                    mode='lines', name=entity))
+
+    fig_wind.update_layout(
+        title='Produção de energia eólica (Top 10 países)',
+        xaxis_title='Ano',
+        yaxis_title='Produção de eletricidade (TWh)',
+        legend_title='Países',
+        height=500,
+        width=800
+    )
+
+    st.plotly_chart(fig_wind)
+
+    # Hydro energy plot
+    fig_hydro = go.Figure()
 
     for entity in top_hydro:
         df_subset = df_renewable[df_renewable['Entity'] == entity]
-        fig.add_trace(go.Scatter(x=df_subset['Year'], y=df_subset['Electricity from hydro (TWh)'],
-                        mode='lines', name=entity, showlegend=True, legendgroup='2'), row=2, col=1)
+        fig_hydro.add_trace(go.Scatter(x=df_subset['Year'], y=df_subset['Electricity from hydro (TWh)'],
+                                    mode='lines', name=entity))
+
+    fig_hydro.update_layout(
+        title='Produção de energia hidrelétrica (Top 10 países)',
+        xaxis_title='Ano',
+        yaxis_title='Produção de eletricidade (TWh)',
+        legend_title='Países',
+        height=500,
+        width=800
+    )
+
+    st.plotly_chart(fig_hydro)
+
+    # Solar energy plot
+    fig_solar = go.Figure()
 
     for entity in top_solar:
         df_subset = df_renewable[df_renewable['Entity'] == entity]
-        fig.add_trace(go.Scatter(x=df_subset['Year'], y=df_subset['Electricity from solar (TWh)'],
-                        mode='lines', name=entity, showlegend=True, legendgroup='3'), row=3, col=1)
+        fig_solar.add_trace(go.Scatter(x=df_subset['Year'], y=df_subset['Electricity from solar (TWh)'],
+                                    mode='lines', name=entity))
 
-    fig.update_layout(
-        height=1000, width=1000,
-        legend=dict(
-            groupclick="toggleitem"
-        )
-    )
-    
-    fig.update_layout(
-        annotations=[
-            dict(x=1, y=1, xref='paper', yref='paper', showarrow=False, text='Produção de energia eólica (Top 10 países)', font=dict(size=12)),
-            dict(x=1, y=0.65, xref='paper', yref='paper', showarrow=False, text='Produção de energia hidrelétrica (Top 10 países)', font=dict(size=12)),
-            dict(x=1, y=0.3, xref='paper', yref='paper', showarrow=False, text='Produção de energia solar (Top 10 países)', font=dict(size=12))
-        ],
-        legend_tracegroupgap=160,
-        legend=dict(x=1.05, y=1, tracegroupgap=160, traceorder="normal", font=dict(size=10), orientation="v"),
-        yaxis1=dict(title="Produção de Eletricidade (TWh)"),
-        yaxis2=dict(title="Produção de Eletricidade (TWh)"),
-        yaxis3=dict(title="Produção de Eletricidade (TWh)"),
+    fig_solar.update_layout(
+        title='Produção de energia solar (Top 10 países)',
+        xaxis_title='Ano',
+        yaxis_title='Produção de eletricidade (TWh)',
+        legend_title='Países',
+        height=500,
+        width=800
     )
 
-    st.plotly_chart(fig)
+    st.plotly_chart(fig_solar)
 
     # Subseção 1.3: Padrões entre fontes fósseis e limpas
     st.header("Comparação entre fontes fósseis e limpas")
