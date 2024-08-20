@@ -551,6 +551,10 @@ def linear_regression_prevision():
         title_text='Previsões de Produção de Energia no Brasil'
     )
     st.plotly_chart(fig)
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=X, y=y_fossil, mode='markers', name='Dados reais', marker=dict(color='blue')))
+    st.plotly_chart(fig)
     
 
 # Barra lateral para navegação
