@@ -501,6 +501,7 @@ def linear_regression_prevision():
     fossil_pred_all = model_fossil.predict(all_years)
     renewables_pred_all = model_renewables.predict(all_years)
 
+    st.markdown(f'{X}, {y_fossil}, {y_renewables}')
     # Calcular os IC 95%
     def calculate_confidence_interval(model, X, y, X_all, confidence=0.95):
         y_pred = model.predict(X)
@@ -527,7 +528,6 @@ def linear_regression_prevision():
     overall_min = min(min_fossil, min_renewables)
     overall_max = max(max_fossil, max_renewables)
 
-    st.markdown(f'{X}, {y_fossil}, {y_renewables}')
 
     # Plotar as previsões
     fig1 = go.Figure()
