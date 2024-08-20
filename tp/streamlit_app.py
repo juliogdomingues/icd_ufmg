@@ -459,7 +459,7 @@ def wealth_renewable_relationship():
         autosize=False,
         width=1000,
         height=800,
-        margin=dict(r=100)
+        margin=dict(r=10)
     )
 
     st.plotly_chart(fig)
