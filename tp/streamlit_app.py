@@ -150,25 +150,30 @@ def analyze_global_data():
                  .nlargest(10, 'Electricity from solar (TWh)')
                  .reset_index()['Entity'])
 
-    fig, ax = plt.subplots(3, 1, figsize=(10, 10))
+    # Gráfico de linhas: Produção de energia por país(vento, água e solar)
 
-    sns.lineplot(x='Year', y='Electricity from wind (TWh)', hue='Entity',
-                 data=df_renewable[df_renewable['Entity'].isin(top_wind)], ax=ax[0])
-    ax[0].legend(loc='upper left')
-    ax[0].set_title('Produção de energia eólica (Top 10 países)')
+    fig = make_subplots(rows=3, cols=1, shared_xaxes=True, vertical_spacing=0.1,
+                        subplot_titles=('Produção de energia eólica (Top 10 países)',
+                                       'Produção de energia hidrelétrica (Top 10 países)',
+                                       'Produção de energia solar (Top 10 países)'))
 
-    sns.lineplot(x='Year', y='Electricity from hydro (TWh)', hue='Entity',
-                 data=df_renewable[df_renewable['Entity'].isin(top_hydro)], ax=ax[1])
-    ax[1].legend(loc='upper left')
-    ax[1].set_title('Produção de energia hidrelétrica (Top 10 países)')
+    for entity in top_wind:
+        df_subset = df_renewable[df_renewable['Entity'] == entity]
+        fig.add_trace(go.Scatter(x=df_subset['Year'], y=df_subset['Electricity from wind (TWh)'],
+                        mode='lines', name=entity), row=1, col=1)
 
-    sns.lineplot(x='Year', y='Electricity from solar (TWh)', hue='Entity',
-                 data=df_renewable[df_renewable['Entity'].isin(top_solar)], ax=ax[2])
-    ax[2].legend(loc='upper left')
-    ax[2].set_title('Produção de energia solar (Top 10 países)')
+    for entity in top_hydro:
+        df_subset = df_renewable[df_renewable['Entity'] == entity]
+        fig.add_trace(go.Scatter(x=df_subset['Year'], y=df_subset['Electricity from hydro (TWh)'],
+                        mode='lines', name=entity), row=2, col=1)
 
-    plt.tight_layout()
-    st.pyplot(fig)
+    for entity in top_solar:
+        df_subset = df_renewable[df_renewable['Entity'] == entity]
+        fig.add_trace(go.Scatter(x=df_subset['Year'], y=df_subset['Electricity from solar (TWh)'],
+                        mode='lines', name=entity), row=3, col=1)
+
+    fig.update_layout(height=1000, width=800, showlegend=True)
+    st.plotly_chart(fig)
 
     # Subseção 1.3: Padrões entre fontes fósseis e limpas
     st.header("Comparação entre fontes fósseis e limpas")
