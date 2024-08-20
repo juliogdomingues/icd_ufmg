@@ -490,7 +490,7 @@ def wealth_renewable_relationship():
 
 # Seção 4: Regressão linear e previsões
 def linear_regression_prevision():
-    X = model_loaded['X'][0]
+    X = model_loaded['X'].flatten()
     model_fossil = model_loaded['model_fossil']
     model_renewables = model_loaded['model_renewables']
     y_fossil = model_loaded['y_fossil']
