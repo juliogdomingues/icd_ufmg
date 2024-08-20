@@ -511,9 +511,11 @@ def linear_regression_prevision():
     overall_min = min(min_fossil, min_renewables)
     overall_max = max(max_fossil, max_renewables)
 
+    st.markdown(f'{X.shape}')
+
     # Plotar as previsões
         
-    fig = make_subplots(rows=1, cols=2, 
+    fig = make_subplots(rows=2, cols=1, 
                         subplot_titles=('Previsão da Produção de Energia de Combustíveis Fósseis no Brasil',
                                         'Previsão da Produção de Energia Renovável no Brasil'))
 
