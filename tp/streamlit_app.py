@@ -519,7 +519,6 @@ def linear_regression_prevision():
     # IC para renováveis
     renewables_intervals_all = calculate_confidence_interval(model_renewables, X, y_renewables, all_years)
 
-    st.markdown(f'{fossil_intervals_all}, {renewables_intervals_all}')
 
     # Obter limites do gráfico para manter as escalas semelhantes
     min_fossil = np.min(np.concatenate((y_fossil, fossil_pred_all - fossil_intervals_all)))
@@ -530,6 +529,7 @@ def linear_regression_prevision():
     overall_min = min(min_fossil, min_renewables)
     overall_max = max(max_fossil, max_renewables)
 
+    st.markdown(f'{fossil_intervals_all}, {renewables_intervals_all}')
 
     # Plotar as previsões
     fig1 = go.Figure()
@@ -539,14 +539,15 @@ def linear_regression_prevision():
                             y=list(fossil_pred_all - fossil_intervals_all) + list(fossil_pred_all + fossil_intervals_all)[::-1], 
                             fill='toself', fillcolor='rgba(255, 0, 0, 0.2)', line=dict(color='rgba(255, 0, 0, 0)'), 
                             name='Intervalo de Confiança de 95%'))
-    # fig1.update_layout(
-    #     height=600,
-    #     width=600,
-    #     showlegend=True,
-    #     xaxis_title='Ano',
-    #     yaxis_title='Produção de Energia de Combustíveis Fósseis (TWh)',
-    #     title_text='Previsão da Produção de Energia de Combustíveis Fósseis no Brasil'
-    # )
+    fig1.update_layout(
+        height=600,
+        width=600,
+        showlegend=True,
+        xaxis_title='Ano',
+        yaxis_title='Produção de Energia de Combustíveis Fósseis (TWh)',
+        title_text='Previsão da Produção de Energia de Combustíveis Fósseis no Brasil'
+        yaxis=dict(range=[overall_min, overall_max]),
+    )
 
     # Create the second figure for Renewables
     fig2 = go.Figure()
@@ -556,14 +557,15 @@ def linear_regression_prevision():
                             y=list(renewables_pred_all - renewables_intervals_all) + list(renewables_pred_all + renewables_intervals_all)[::-1], 
                             fill='toself', fillcolor='rgba(255, 165, 0, 0.2)', line=dict(color='rgba(255, 165, 0, 0)'), 
                             name='Intervalo de Confiança de 95%'))
-    # fig2.update_layout(
-    #     height=600,
-    #     width=600,
-    #     showlegend=True,
-    #     xaxis_title='Ano',
-    #     yaxis_title='Produção de Energia Renovável (TWh)',
-    #     title_text='Previsão da Produção de Energia Renovável no Brasil'
-    # )
+    fig2.update_layout(
+        height=600,
+        width=600,
+        showlegend=True,
+        xaxis_title='Ano',
+        yaxis_title='Produção de Energia Renovável (TWh)',
+        title_text='Previsão da Produção de Energia Renovável no Brasil'
+        yaxis=dict(range=[overall_min, overall_max]),
+    )
 
     # Display the figures in Streamlit
     st.plotly_chart(fig1)
