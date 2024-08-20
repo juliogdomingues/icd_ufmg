@@ -541,7 +541,7 @@ def linear_regression_prevision():
                             name='Intervalo de Confiança de 95%'))
     fig1.update_layout(
         height=600,
-        width=600,
+        width=1000,
         showlegend=True,
         xaxis_title='Ano',
         yaxis_title='Produção de Energia de Combustíveis Fósseis (TWh)',
@@ -559,7 +559,7 @@ def linear_regression_prevision():
                             name='Intervalo de Confiança de 95%'))
     fig2.update_layout(
         height=600,
-        width=600,
+        width=1000,
         showlegend=True,
         xaxis_title='Ano',
         yaxis_title='Produção de Energia Renovável (TWh)',
