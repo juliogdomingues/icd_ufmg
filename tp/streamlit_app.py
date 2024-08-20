@@ -183,7 +183,7 @@ def analyze_global_data():
             dict(x=1, y=0.3, xref='paper', yref='paper', showarrow=False, text='Produção de energia solar (Top 10 países)', font=dict(size=12))
         ],
         legend_tracegroupgap=160,
-        legend=dict(x=1.05, y=1.05, tracegroupgap=160, traceorder="grouped+reversed"),
+        legend=dict(x=1.05, y=1, tracegroupgap=160, traceorder="normal", font=dict(size=10), orientation="v"),
         yaxis1=dict(title="Produção de Eletricidade (TWh)"),
         yaxis2=dict(title="Produção de Eletricidade (TWh)"),
         yaxis3=dict(title="Produção de Eletricidade (TWh)"),
