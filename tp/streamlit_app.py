@@ -511,53 +511,45 @@ def linear_regression_prevision():
     overall_min = min(min_fossil, min_renewables)
     overall_max = max(max_fossil, max_renewables)
 
-    st.markdown(f'{X.shape}')
+    st.markdown(f'{X.shape}, {y_fossil.shape}, {y_renewables.shape}')
 
     # Plotar as previsões
-        
-    fig = make_subplots(rows=2, cols=1, 
-                        subplot_titles=('Previsão da Produção de Energia de Combustíveis Fósseis no Brasil',
-                                        'Previsão da Produção de Energia Renovável no Brasil'))
-
-    fig.add_trace(go.Scatter(x=X, y=y_fossil, mode='markers', name='Dados reais', marker=dict(color='blue')),
-                row=1, col=1)
-    fig.add_trace(go.Scatter(x=all_years, y=fossil_pred_all, mode='lines', name='Previsões', line=dict(color='red')),
-                row=1, col=1)
-    fig.add_trace(go.Scatter(x=all_years + all_years[::-1], 
+    fig1 = go.Figure()
+    fig1.add_trace(go.Scatter(x=X, y=y_fossil, mode='markers', name='Dados reais', marker=dict(color='blue')))
+    fig1.add_trace(go.Scatter(x=all_years, y=fossil_pred_all, mode='lines', name='Previsões', line=dict(color='red')))
+    fig1.add_trace(go.Scatter(x=all_years + all_years[::-1], 
                             y=list(fossil_pred_all - fossil_intervals_all) + list(fossil_pred_all + fossil_intervals_all)[::-1], 
                             fill='toself', fillcolor='rgba(255, 0, 0, 0.2)', line=dict(color='rgba(255, 0, 0, 0)'), 
-                            name='Intervalo de Confiança de 95%'),
-                row=1, col=1)
-    
-    fig.add_trace(go.Scatter(x=X, y=y_renewables, mode='markers', name='Dados reais', marker=dict(color='green')),
-                row=1, col=2)
-    fig.add_trace(go.Scatter(x=all_years, y=renewables_pred_all, mode='lines', name='Previsões', line=dict(color='orange')),
-                row=1, col=2)
-    fig.add_trace(go.Scatter(x=all_years + all_years[::-1], 
-                            y=list(renewables_pred_all - renewables_intervals_all) + list(renewables_pred_all + renewables_intervals_all)[::-1], 
-                            fill='toself', fillcolor='rgba(255, 165, 0, 0.2)', line=dict(color='rgba(255, 165, 0, 0)'), 
-                            name='Intervalo de Confiança de 95%'),
-                row=1, col=2)
-
-    fig.update_layout(
-        height=600, 
-        width=1200,
+                            name='Intervalo de Confiança de 95%'))
+    fig1.update_layout(
+        height=600,
+        width=600,
         showlegend=True,
         xaxis_title='Ano',
         yaxis_title='Produção de Energia de Combustíveis Fósseis (TWh)',
-        xaxis2_title='Ano',
-        yaxis2_title='Produção de Energia Renovável (TWh)',
-        xaxis=dict(range=[min(all_years), max(all_years)]),
-        yaxis=dict(range=[overall_min, overall_max]),
-        xaxis2=dict(range=[min(all_years), max(all_years)]),
-        yaxis2=dict(range=[overall_min, overall_max]),
-        title_text='Previsões de Produção de Energia no Brasil'
+        title_text='Previsão da Produção de Energia de Combustíveis Fósseis no Brasil'
     )
-    st.plotly_chart(fig)
 
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=X, y=y_fossil, mode='markers', name='Dados reais', marker=dict(color='blue')))
-    st.plotly_chart(fig)
+    # Create the second figure for Renewables
+    fig2 = go.Figure()
+    fig2.add_trace(go.Scatter(x=X, y=y_renewables, mode='markers', name='Dados reais', marker=dict(color='green')))
+    fig2.add_trace(go.Scatter(x=all_years, y=renewables_pred_all, mode='lines', name='Previsões', line=dict(color='orange')))
+    fig2.add_trace(go.Scatter(x=all_years + all_years[::-1], 
+                            y=list(renewables_pred_all - renewables_intervals_all) + list(renewables_pred_all + renewables_intervals_all)[::-1], 
+                            fill='toself', fillcolor='rgba(255, 165, 0, 0.2)', line=dict(color='rgba(255, 165, 0, 0)'), 
+                            name='Intervalo de Confiança de 95%'))
+    fig2.update_layout(
+        height=600,
+        width=600,
+        showlegend=True,
+        xaxis_title='Ano',
+        yaxis_title='Produção de Energia Renovável (TWh)',
+        title_text='Previsão da Produção de Energia Renovável no Brasil'
+    )
+
+    # Display the figures in Streamlit
+    st.plotly_chart(fig1, use_container_width=True)
+    st.plotly_chart(fig2, use_container_width=True)
     
 
 # Barra lateral para navegação
