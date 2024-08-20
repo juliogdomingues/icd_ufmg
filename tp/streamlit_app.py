@@ -429,6 +429,9 @@ def wealth_renewable_relationship():
 
     # Subseção 3.4: Análise de países específicos (Brasil, EUA, China, Luxemburgo)
     st.header("Análise de países específicos")
+    
+    st.markdown("A efeito de comparação como o Brasil em relação ao PIB per Capita e porcentagem de participação de energias renováveis, foram selecionados os países: Estados Unidos, China e Luxemburgo. ")
+    
     fig = make_subplots(
         rows=4, cols=2,
         subplot_titles=[
@@ -453,8 +456,8 @@ def wealth_renewable_relationship():
             fig.add_trace(trace, row=i, col=1)
 
     fig.update_layout(
-        autosize=False,
-        width=1200,
+        # autosize=False,
+        # width=1000,
         height=800
     )
 
